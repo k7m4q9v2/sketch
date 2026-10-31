@@ -1,0 +1,52 @@
+/* Neutral surfaces and a single icon language; editing and transport geometry stays intact. */
+:root{--text:#242426;--muted:#858588;--edge:#e6e6e8;--accent:#272729;--surface:#fbfbfc;--control:#f1f1f3}
+body,#app,.panel,.roll-panel,.roll-heading,.roll-toolbar,.transport-dock,.transport{background:var(--surface)}
+button,input,select{letter-spacing:-.015em}
+button:hover{background:#ededf0}button:active{opacity:.72}
+button:focus-visible,select:focus-visible,input:focus-visible,canvas:focus-visible{outline-color:#7c7c81}
+input,select,.browser-toolbar input[type=search]{background:var(--control);border-radius:10px;box-shadow:inset 0 1px 1px #00000002}
+input[type=checkbox],input[type=radio]{accent-color:#2a2a2d}
+.project-page-header h1,.panel-heading h1,.panel-heading h2{color:#252528;font-weight:600}
+.project-list-item strong,.project-label button{font-weight:600}
+.project-list-item span,.knob-label,.knob-output,.tension-row>span,.selector-item small,.font-picker,.chevron{color:#85858a}
+.project-list-item:hover{background:#f0f0f2}
+.back-button,.icon-button,.project-more,.channel-more,.font-more,.done-button,.import-button,.project-page-header button{color:#313135!important}
+.app-header #back-to-projects,.editing #back-to-rack{background:transparent;border-radius:11px;box-shadow:none}
+.app-header #main-menu,.editing #roll-channel-menu{color:#303034;font-weight:500}
+.channel.selected{background:#f0f0f2}.channel{border-color:#e4e4e7;border-radius:9px}
+.channel-name{color:#303034;border-right-color:#dfdfe3}.midi-window,.midi-window:hover{background:#e9e9ec;border-radius:6px}
+.ms-button{color:#939397}.ms-button.active{color:#252529;background:#dddde1;border-radius:6px}
+.rack>.add-channel{color:#36363b}.rack>.add-channel svg{width:24px;height:24px;vertical-align:middle}
+.project-page-header #new-project{background:#eeeeF0;border-radius:12px}
+.channel-more svg,.project-more svg,.font-more svg{width:20px;height:20px;vertical-align:middle}
+.knob{background:conic-gradient(from 225deg,#68686f 0deg var(--fill),#ddddE1 var(--fill) 270deg,transparent 270deg)}
+.knob-face{background:var(--surface);box-shadow:inset 0 0 0 1px #ffffff90}.knob-face i{background:#6b6b73}
+.transport{border-color:#e6e6e9}.transport-dock{box-shadow:none}
+.transport #play,.transport .play.playing,.sound-transport #play,#sound-dialog #play{background:#242426;color:#fff;border-radius:12px;box-shadow:inset 0 1px 0 #ffffff12,0 1px 2px #00000012}
+.transport #play svg,#sound-dialog #play svg{width:22px;height:22px}
+.bpm-picker,.value-picker,.pitch-picker{background:var(--control);border-radius:10px;color:#303034;box-shadow:none}
+.bpm-picker span,.pitch-picker span,.snap-label{color:#8a8a91}
+.metro{color:#8d8d94}.metro.active{color:#303034;background:#e6e6e9;border-radius:10px}
+.roll-toolbar .tool{border-radius:10px;color:#8a8a91;background:transparent}.roll-toolbar .tool.active{background:#e7e7eb;color:#303034}
+.roll-toolbar #roll-channel{color:#343438!important;font-weight:500}
+.roll-toolbar .value-picker{background:transparent}.roll-toolbar,.roll-heading{border-color:#e8e8eb}
+.roll-playhead{background:#b3a737;box-shadow:-3px 0 0 2px #c9bf3e18}.roll-playhead:before{border-top-color:#b3a737}
+#sound-dialog,dialog{background:var(--surface);color:var(--text);box-shadow:0 12px 42px #00000016;border-color:#e3e3e6}
+dialog::backdrop{background:#11111635;backdrop-filter:none;-webkit-backdrop-filter:none}
+.dialog-top,.browser-toolbar,.selector-item,.font-list-row,.effect-tabs{border-color:#e6e6e9}
+.selector-item.selected{background:#eeeef1;color:#28282c}.selector-item{border-radius:7px}
+.preset-navigation>button{background:#f0f0f2;border-radius:9px}.preset-navigation #preset-picker{background:transparent}
+.preset-navigation svg{vertical-align:middle}.effect-tabs button{color:#8b8b91}
+.effect-tabs button[aria-selected=true]{color:#303034;border-color:#66666e}
+.envelope-graph{background:#f0f0f2;border-radius:8px}.graph-grid{stroke:#dddde2}
+.envelope-graph #envelope-line{stroke:#777780}.envelope-graph #envelope-gate{stroke:#b0b0b7}
+.envelope-graph circle{stroke:#696971;fill:#fbfbfc}.envelope-graph text{fill:#96969e}
+.toggle-label,.delay-group h3,.delay-caption,.delay-modes{color:#808088}
+.tempo-wheel-frame:before{background:#ececef}.tempo-option{color:#929298}.tempo-option[aria-selected=true]{color:#252529}
+.tempo-done,.choice-option{color:#303034}.choice-option[aria-selected=true]{background:#eeeef1}
+.primary,.share-file-button{background:#27272b!important;color:#fff!important;border-radius:11px}
+.note-popover{background:#fafafc;border:1px solid #e2e2e7;border-radius:12px;box-shadow:0 3px 15px #00000010}
+.note-popover button{color:#34343a}.note-popover #delete-note,.danger{color:#cf4545}
+.toast{background:#2c2c31;color:#f8f8fa;box-shadow:0 2px 12px #00000016}
+.pitch-hud{background:#29292eee;color:white;border-color:#414147;box-shadow:0 4px 24px #0000001a}.pitch-hud output{color:#f5f5f7}.pitch-hud span{color:#b8b8c0}
+.transport-dock>.transport,#sound-dialog .transport{background:var(--surface)}
