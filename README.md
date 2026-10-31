@@ -46,6 +46,6 @@ npm test
 
 初回にアプリ本体と音源一覧だけをオフラインキャッシュします。SoundFont本体は選択・再生に必要になったものだけをダウンロードしてIndexedDBに保存します。同時に同じ音源を使っても取得は一回だけです。次回起動時は保存済みのBlobを利用し、再ダウンロードも全ファイルの再検証も行いません。端末のサイトデータを消した場合には再取得が必要です。
 
-標準音源は13個、計1,975音色です。GeneralUser GSに加え、Pokemon HGSS / DPPt / Black and White 2 / Emerald、Mother 3 / 1+2、New Super Mario Bros DS、Lil'Sness、GenesiSF、KEYGEN、SNES、gmを同梱しています。追加分の容量は約154MiBです。`site/bundled-fonts.js` と `site/additional-fonts.js` が一覧・音色・ファイルの識別情報を持ちます。
+標準音源は16個、計2,475音色です。GeneralUser GSに加え、Pokemon HGSS / DPPt / Black and White 2 / Emerald、Mother 3 / 1+2、New Super Mario Bros DS、Lil'Sness、GenesiSF、KEYGEN、SNES、gm、GS Wavetable Synth、Mario Party DS、PW AAを同梱しています。GeneralUser GS以外の音源容量は約171MiBです。`site/bundled-fonts.js` と `site/additional-fonts.js` が一覧・音色・ファイルの識別情報を持ちます。
 
 GeneralUser GSはMicrosoft GS Wavetableそのものではありません。GeneralUser GSのライセンスは `site/GeneralUser-LICENSE.txt`、音源エンジンの表示は `site/THIRD_PARTY_NOTICES.txt` を参照してください。

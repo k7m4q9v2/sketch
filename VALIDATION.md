@@ -2,6 +2,8 @@
 
 ## Current local revision
 
+- Added GS Wavetable Synth (235 presets), Mario Party DS (78), and PW AA (187). Touhou is excluded at the user's request. All 16 bundled banks and 2,475 preset records match their shipped SF2 files; 99 automated checks pass, including actual-engine playback for each new bank. SoundFont downloads and offline reuse retain the existing loader. App cache version is v9.
+
 - Ruler taps now start playback at the snapped tick, including horizontal scroll offset. Ruler drags, pinches and cancelled touches never seek. Go to start resets the viewport and playhead, continuing playback only when already running.
 - 96 checks pass. New coverage includes overlapping-note chase, exact-position notes without double triggering, muted/ended notes, mid-slide chord tuning, looping from the end, and passing the requested tick through audio preparation. Existing WAV export and native-engine checks still pass.
 - Browser UI verification: tapping bar 2 started at `02:01:29`; Go to start while playing returned to `01:01:43` without stopping. Stop followed by Go to start left playback off and the playhead at zero. Selected slide notes retain the full rectangular selection outline; their bounded triangle does not overlap the pitch label. No browser errors were recorded.
