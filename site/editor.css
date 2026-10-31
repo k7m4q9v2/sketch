@@ -1,1 +1,3 @@
 .roll-toolbar .tool-group{gap:2px}#slide-tool{font-size:15px;min-width:32px;padding:5px}#channel-tuning{display:flex;align-items:center;gap:16px;padding:8px 0;color:#85858e;font-size:12px}#channel-tuning>span{margin-right:auto}.note-popover{max-width:calc(100% - 12px);flex-wrap:wrap}button[hidden]{display:none!important}@media(max-width:430px){.roll-toolbar{gap:4px!important}.roll-toolbar #roll-channel{max-width:105px}}
+
+#go-to-start{display:grid;place-items:center;width:44px;height:44px;padding:10px;color:var(--text)}#go-to-start svg{width:21px;height:21px}

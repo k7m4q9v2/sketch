@@ -4,6 +4,7 @@ const paths={
  plus:'<path d="M12 5v14M5 12h14"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>',
  more:'<g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></g>',
  play:'<path d="m8 5 11 7-11 7Z" fill="currentColor" stroke="none"/>',
+ start:'<path d="M6 5v14M18 5 8 12l10 7Z"/>',
  pause:'<path d="M8 6v12M16 6v12" stroke-width="3.2"/>',
  undo:'<path d="m8 5-5 5 5 5M3 10h10a6 6 0 0 1 6 6v2"/>',
  redo:'<path d="m16 5 5 5-5 5m5-5H11a6 6 0 0 0-6 6v2"/>',

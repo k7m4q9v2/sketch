@@ -2,6 +2,10 @@
 
 ## Current local revision
 
+- Ruler taps now start playback at the snapped tick, including horizontal scroll offset. Ruler drags, pinches and cancelled touches never seek. Go to start resets the viewport and playhead, continuing playback only when already running.
+- 96 checks pass. New coverage includes overlapping-note chase, exact-position notes without double triggering, muted/ended notes, mid-slide chord tuning, looping from the end, and passing the requested tick through audio preparation. Existing WAV export and native-engine checks still pass.
+- Browser UI verification: tapping bar 2 started at `02:01:29`; Go to start while playing returned to `01:01:43` without stopping. Stop followed by Go to start left playback off and the playhead at zero. Selected slide notes retain the full rectangular selection outline; their bounded triangle does not overlap the pitch label. No browser errors were recorded.
+
 - 90 automated checks pass, including held-note slides, independent channel cents, eraser-only deletion, selection edge scrolling, larger resize targets, whole-bar right duplication, first-note audio recovery, and final-note/release/delay-tail WAV rendering. Static checks cover 30 source files and all 13 bundled banks.
 - Song/arrangement, sampler and the Sounds drawer were removed from this web revision at the user's request. The unfinished prototype and specifications are retained outside this repository for a future APK. The IndexedDB version and unused sample store are retained to avoid deleting local prototype data; APK-only drafts cannot be edited accidentally in the web UI.
 - Browser verification at `/sketch/`: created a SoundFont channel, entered notes, started/stopped playback, opened SoundFont/Envelope/Delay/channel-cents controls, and exported audio. The native media element decoded the new WAV with readyState 4, a 2.768753-second duration and no media error.

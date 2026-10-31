@@ -19,7 +19,32 @@ export class Sequencer{
    // Preserve unaffected held notes while releasing removed, muted or edited ones.
    if(old){const active=new Set(activeChannels(p).map(c=>c.id));for(const [key,handle] of this.handles){const sep=key.indexOf(':'),i=Number(key.slice(0,sep)),id=key.slice(sep+1),before=old.channels[i],after=p.channels[i],a=before?.notes.find(n=>n.id===id),b=after?.notes.find(n=>n.id===id);if(!after||after.id!==before?.id||!active.has(after.id)||after.fontId!==before.fontId||after.bank!==before.bank||after.program!==before.program||!a||!b||a.slide!==b.slide||a.pitch!==b.pitch||a.start!==b.start||a.duration!==b.duration||b.start+b.duration<=tick||p.bars!==old.bars){this.engine.noteOff(handle);this.handles.delete(key);}}}
  }
- start(){this.delay.reset();this.engine.panic(-1);this.handles.clear();this.position=0;this.cycle=0;this.eventIndex=0;this.playing=true;}
+ start(tick=0){
+  this.stop();this.cycle=0;if(!this.project)return;
+  this.position=Math.max(0,Math.min(this.length-1,Math.round((Number.isFinite(tick)?tick:0)*this.scale)));
+  // Chase held MIDI notes without rendering the entire skipped section.
+  const held=new Map(),pitchAt=(v,t)=>v.from+(v.target-v.from)*Math.max(0,Math.min(1,(t-v.start)/Math.max(1,v.end-v.start)));
+  while(this.eventIndex<this.events.length&&Math.round(this.events[this.eventIndex].tick*this.scale)<this.position){
+   const e=this.events[this.eventIndex++],key=e.channel+':'+e.id;
+   if(e.type==='on')held.set(key,{event:e,from:e.pitch,target:e.pitch,start:e.tick,end:e.tick});
+   else if(e.type==='off')held.delete(key);
+   else if(e.type==='slide'){
+    const voices=[...held.values()].filter(v=>v.event.channel===e.channel);
+    if(voices.length){const delta=e.pitch-Math.max(...voices.map(v=>pitchAt(v,e.tick)));for(const v of voices){v.from=pitchAt(v,e.tick);v.target=v.from+delta;v.start=e.tick;v.end=e.tick+e.duration;}}
+   }
+  }
+  const continuing=[];let tuned=false;
+  for(const v of held.values()){
+   if(Math.round((v.event.tick+v.event.duration)*this.scale)<=this.position)continue;
+   this.event(v.event);const h=this.handles.get(v.event.channel+':'+v.event.id);if(!h)continue;
+   const pitch=pitchAt(v,this.tick);if(pitch!==v.event.pitch){this.engine.slide(h,pitch,1);tuned=true;}
+   if(v.end>this.tick)continuing.push({h,target:v.target,frames:Math.max(1,Math.round((v.end-this.tick)*this.scale))});
+  }
+  // Set restored tuning before scheduling the remainder of an in-flight glide.
+  if(tuned)this.engine.render(1);
+  for(const v of continuing)this.engine.slide(v.h,v.target,v.frames);
+  this.playing=true;
+ }
  stop(){this.delay.reset();this.playing=false;this.position=0;this.eventIndex=0;this.engine.panic(-1);this.handles.clear();this.clickLeft=0;}
  event(e){const key=e.channel+':'+e.id;if(e.type==='on'){const h=this.engine.noteOn(e.channel,e.pitch,e.velocity/127,e);if(h)this.handles.set(key,h);}else if(e.type==='slide'){const voices=[...this.handles].filter(([key])=>key.startsWith(e.channel+':')).map(([,h])=>({h,pitch:this.engine.pitchOf(h)})).filter(v=>v.pitch>=0);if(voices.length){const delta=e.pitch-Math.max(...voices.map(v=>v.pitch));for(const v of voices)this.engine.slide(v.h,v.pitch+delta,Math.round(e.duration*this.scale));}}else if(e.type==='off'){const h=this.handles.get(key);if(h)this.engine.noteOff(h);this.handles.delete(key);}else {this.clickLeft=Math.round(this.rate*.035);this.clickPhase=0;this.clickFrequency=e.accent?1500:1000;}}
  render(left,right){let offset=0;while(offset<left.length){if(this.playing){while(this.eventIndex<this.events.length&&Math.round(this.events[this.eventIndex].tick*this.scale)<=this.position)this.event(this.events[this.eventIndex++]);if(this.position>=this.length){this.position=0;this.eventIndex=0;this.cycle++;continue;}}

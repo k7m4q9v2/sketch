@@ -15,6 +15,10 @@ function readyHost(getBlob=()=>assert.fail('unexpected font read')){
  const project=newProject();project.channels.push({...channel(),fontId:'one'},{...channel(1),fontId:'two'});
  return{host,project,messages};
 }
+test('transport sends the requested start tick after loading and clears preview tokens',async()=>{
+ const {host,project,messages}=readyHost();for(const id of ['one','two']){host.loaded.add(id);host.signatures.set(id,'*');}
+ host.previewTokens.set('old',{});await host.start(project,1440);assert.deepEqual(messages.at(-1),{type:'start',tick:1440});assert.equal(host.previewTokens.size,0);
+});
 test('closed or failed audio reconnects and reloads the saved SoundFont on the very first note',async t=>{
  const previous=globalThis.AudioContext;t.after(()=>globalThis.AudioContext=previous);
  globalThis.AudioContext=class{constructor(){this.state='suspended';}async resume(){this.state='running';}async close(){this.state='closed';}};

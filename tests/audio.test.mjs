@@ -9,6 +9,22 @@ const bytes=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);
 async function setup(){const engine=await LumaEngine.create(wasm,44100);const presets=engine.load('factory',bytes(bank));const p=newProject();p.channels.push(channel());Object.assign(p.channels[0].adsr,{enabled:true,a:.005,d:.3,s:.65,r:.25});engine.configure(p);return {engine,p,presets};}
 function render(e,frames){const out=new Float32Array(frames*2);for(let i=0;i<frames;i+=128){const n=Math.min(128,frames-i);out.set(e.render(n),i*2);}return out;}
 const energy=a=>a.reduce((s,v)=>s+v*v,0)/a.length;
+test('seek chases only overlapping notes and schedules notes at the tapped position once',async()=>{
+ const {engine,p}=await setup();p.bpm=120;p.bars=2;
+ const ended=note(50,0,480),held=note(60,0,1920),exact=note(67,960,480);p.channels[0].notes=[ended,held,exact];
+ p.channels.push({...channel(1),mute:true,notes:[note(80,0,4000)]});const seq=new Sequencer(engine,44100);seq.setProject(p);seq.start(960);
+ assert.equal(seq.position,44100);assert.deepEqual([...seq.handles.keys()],['0:'+held.id]);
+ const l=new Float32Array(512),r=new Float32Array(512);seq.render(l,r);assert.ok(energy(l)>1e-6);assert.deepEqual([...seq.handles.keys()],['0:'+held.id,'0:'+exact.id]);
+ const handles=[...seq.handles.values()];seq.render(l,r);assert.deepEqual([...seq.handles.values()],handles);
+ seq.start(1920);seq.render(l,r);assert.equal(seq.handles.size,0);assert.ok(energy(l)<1e-12);
+ seq.start(0);assert.equal(seq.position,0);seq.render(l,r);assert.deepEqual([...seq.handles.keys()],['0:'+ended.id,'0:'+held.id]);
+});
+test('seeking near the end loops back to the start of the whole project',async()=>{
+ const {engine,p}=await setup();p.bpm=120;p.bars=1;p.channels[0].notes=[note(60,0,480)];const seq=new Sequencer(engine,44100);seq.setProject(p);
+ seq.start(1800);seq.render(new Float32Array(seq.length-seq.position+256),new Float32Array(seq.length-seq.position+256));
+ assert.equal(seq.cycle,1);assert.equal(seq.position,256);assert.equal(seq.handles.size,1);
+ seq.start(NaN);assert.equal(seq.position,0);seq.start(1e20);assert.equal(seq.position,seq.length-1);
+});
 test('master semitones and cents tune every channel, including voices already playing',async()=>{const {engine,p}=await setup();p.channels[0].adsr={enabled:true,a:0,d:0,s:1,r:.01};p.channels.push({...channel(1),adsr:{...p.channels[0].adsr},pan:1});p.channels[0].pan=-1;engine.configure(p);engine.api.note_on(0,60,1);engine.api.note_on(1,60,1);const frequency=side=>{const audio=render(engine,22050);let crossings=0;for(let i=2+side;i<audio.length;i+=2)if(audio[i-2]<0&&audio[i]>=0)crossings++;return crossings*2;};assert.ok(Math.abs(frequency(0)-261.63)<4);p.pitch={note:12,cents:50};engine.configure(p);const target=261.63*2**(12.5/12);assert.ok(Math.abs(frequency(0)-target)<5);assert.ok(Math.abs(frequency(1)-target)<5);});
 test('an 80 MB SF2 bank loads in the actual WASM engine and produces audio',async()=>{const source=Buffer.from(bank),index=source.indexOf('smpl'),old=source.readUInt32LE(index+4),size=80*1024*1024,grow=size-old,sdta=source.indexOf('sdta');const before=Buffer.from(source.subarray(0,index+8)),after=source.subarray(index+8+old);before.writeUInt32LE(size,index+4);before.writeUInt32LE(source.readUInt32LE(sdta-4)+grow,sdta-4);before.writeUInt32LE(source.length-8+grow,4);const large=Buffer.concat([before,source.subarray(index+8,index+8+old),Buffer.alloc(grow),after]);const engine=await LumaEngine.create(wasm,44100);assert.equal(engine.load('factory',bytes(large)).length,4);const p=newProject();p.channels.push(channel());engine.configure(p);engine.api.note_on(0,60,1);assert.ok(energy(render(engine,4096))>1e-6);engine.unload('factory');assert.equal(engine.fonts.size,0);});
 test('DAHDSR Delay and Hold produce silence, a timed plateau, then zero sustain',async()=>{const {engine,p}=await setup();Object.assign(p.channels[0].adsr,{delay:.1,a:0,hold:.1,d:0,s:0,r:0});engine.configure(p);engine.api.note_on(0,60,1);const a=render(engine,14000);assert.ok(energy(a.slice(0,8000))<1e-12);assert.ok(energy(a.slice(9500,16000))>.001);assert.ok(energy(a.slice(20000))<1e-12);});

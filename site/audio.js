@@ -34,10 +34,10 @@ export class AudioHost extends EventTarget{
   node.onprocessorerror=()=>{if(this.node!==node)return;this.broken=true;this.ready=false;this.dispatchEvent(new CustomEvent('error',{detail:{error:'Audio stopped. Tap Play to reconnect.'}}));};
   await this.request('init',{module});if(generation!==this.generation)throw Error('Audio session changed.');node.connect(ctx.destination);
  }
- send(type,data={}){this.node?.port.postMessage({type,...data});}
+ send(type,data={}){if(type==='start')this.previewTokens.clear();this.node?.port.postMessage({type,...data});}
  request(type,data={},transfer=[]){return new Promise((resolve,reject)=>{if(!this.node){reject(Error('Audio is not ready.'));return;}const requestId=++this.serial,timer=setTimeout(()=>{this.pending.delete(requestId);this.broken=true;reject(Error('Audio stopped responding. Tap Play to reconnect.'));},15000);this.pending.set(requestId,{resolve,reject,timer});this.node.port.postMessage({type,requestId,...data},transfer);});}
  async load(id,presets){const signature=this.signature(id,presets);if(this.hasLoaded(id,presets))return;if(this.loading.has(id)){await this.loading.get(id);return this.load(id,presets);}const generation=this.generation;const pending=(async()=>{const blob=await this.getBlob(id),compact=await subsetFont(blob,presets),buffer=await compact.arrayBuffer();if(generation!==this.generation)throw Error('Audio session changed.');const result=await this.request('load',{fontId:id,buffer},[buffer]);this.loaded.add(id);this.signatures.set(id,signature);this.lastProject=null;return result;})().finally(()=>{if(this.loading.get(id)===pending)this.loading.delete(id);});this.loading.set(id,pending);return pending;}
- async start(project){await this.ensure(project);this.send('start');}
+ async start(project,tick=0){await this.ensure(project);this.send('start',{tick});}
  stop(){this.previewTokens.clear();this.send('stop');}
  async preview(project,channel,pitch,id,velocity=100){const c=project.channels[channel];if(!c)return;if(this.context?.state==='closed'||this.broken)this.reset();const token={channelId:c.id,fontId:c.fontId,bank:c.bank,program:c.program};this.previewTokens.set(id,token);
   try{if(!(this.ready&&!this.broken&&this.context?.state==='running'&&this.hasLoaded(c.fontId,requiredPresets(project,c.fontId))))await this.ensure(project,channel);
