@@ -1,4 +1,5 @@
 import {readSf2Name} from './sf2-name.js';
+import {BUNDLED_FONTS} from './bundled-fonts.js';
 export const MAX_FONT_BYTES=4*1024*1024*1024, PART_SIZE=8*1024*1024;
 const ascii=b=>String.fromCharCode(...b);
 const hex=b=>[...new Uint8Array(b)].map(v=>v.toString(16).padStart(2,'0')).join('');
@@ -22,12 +23,13 @@ export async function inspectFont(blob){
 // Bounded-memory content identity: retain legacy SHA-256 IDs for small banks.
 export async function fontId(blob){if(blob.size<=64*1024*1024)return hex(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()));const hashes=[];for(let at=0;at<blob.size;at+=PART_SIZE)hashes.push(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.slice(at,at+PART_SIZE).arrayBuffer())));const data=new Uint8Array(hashes.length*32+8);new DataView(data.buffer).setBigUint64(0,BigInt(blob.size));hashes.forEach((h,i)=>data.set(h,8+i*32));return hex(await crypto.subtle.digest('SHA-256',data));}
 export function fontBlob(font){return font.blob??(font.buffer?new Blob([font.buffer]):null);}
-// The bundled GM bank is served by the same static site. Imported banks stay on this device.
+// Every bank has its own static asset. Download only the bank requested by the user.
 export async function downloadFont(font){
- if(!font.bundled)throw Error('Load the original SF2 file to restore this sound.');
- const response=await fetch(new URL('./GeneralUser-GS.sf2',import.meta.url));
- if(!response.ok)throw Error('Could not load the piano bank. Connect to the internet and try again.');
+ const source=BUNDLED_FONTS.find(f=>f.id===font.id);
+ if(!font.bundled||!source)throw Error('Load the original SF2 file to restore this sound.');
+ const response=await fetch(new URL('./'+source.file,import.meta.url));
+ if(!response.ok)throw Error('Could not load '+source.name+'. Connect to the internet and try again.');
  const blob=await response.blob();
- if(blob.size!==font.size||await fontId(blob)!==font.id)throw Error('The SoundFont download was incomplete. Try again.');
+ if(blob.size!==source.size||await fontId(blob)!==source.id)throw Error('The SoundFont download was incomplete. Try again.');
  return blob;
 }

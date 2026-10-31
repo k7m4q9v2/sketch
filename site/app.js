@@ -1,9 +1,11 @@
 import {icon} from './icons.js';
 import {STANDARD_FONT} from './standard-font.js';
+import {BUNDLED_FONTS} from './bundled-fonts.js';
+import {createFontLoader} from './font-cache.js';
 import {cleanSf2Name} from './sf2-name.js';
 import {droppedSoundFonts} from './file-drop.js';
 import {SNAP_CHOICES} from './snap.js';
-import {inspectFont,fontId,fontBlob,downloadFont} from './font-library.js';
+import {inspectFont,fontId,fontBlob} from './font-library.js';
 import {canShareFile,shareFile} from './share.js';
 import {delayDefaults,TIME_DIVISIONS,delayTimeIndex} from './delay.js';
 import {Knob} from './knob.js';
@@ -17,6 +19,7 @@ const $=id=>document.getElementById(id),fonts=new Map(),history=new History();
 for(const [id,name]of Object.entries({'back-to-projects':'back','back-to-rack':'back','new-project':'plus','add-channel':'plus','dialog-close':'close','undo':'undo','redo':'redo','draw-tool':'pencil','erase-tool':'eraser','preset-prev':'back','preset-next':'next','metronome':'metronome','play':'play'}))$(id).innerHTML=icon(name);
 for(const element of document.querySelectorAll('.chevron'))element.innerHTML=icon('chevron');
 let project=newProject(),selected=0,playing=false,playToken=0,saveTimer,toastTimer,octave=4,exportWorker=null,objectUrls=[],ready=false,dirty=false,saving=false,revision=0,browserMode=null,emptyLibrary=false,hasOpenProject=false;
+const ensureFontBlob=createFontLoader(fonts,{save:font=>storage.put('fonts',font),onDownload:font=>{navigator.storage?.persist?.().catch(()=>{});toast('Downloading '+font.name+'…');}});
 const audio=new AudioHost(fonts,ensureFontBlob),heldPreviews=new Set();
 function toast(message,error=false){clearTimeout(toastTimer);$('toast').textContent=message;$('toast').classList.toggle('error',error);$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,error?7000:3500);}
 function on(id,event,fn){$(id).addEventListener(event,e=>Promise.resolve(fn(e)).catch(error=>toast(error.message||String(error),true)));}
@@ -65,7 +68,7 @@ function renderBrowser(){
   const b=document.createElement('button');b.className='selector-item'+(chosen?' selected':'');b.setAttribute('aria-label',item.name);
   const name=document.createElement('span');name.textContent=item.name;const meta=document.createElement('small');meta.textContent=isFonts?`${item.presets.length} sounds`:`${item.bank} : ${String(item.program).padStart(3,'0')}`;b.append(name,meta);
   b.onclick=()=>Promise.resolve(isFonts?chooseFont(item):choosePreset(item)).then(closeBrowser).catch(e=>toast(e.message,true));row.append(b);
-  if(isFonts&&item.bundled){const more=document.createElement('button');more.className='font-more';more.innerHTML=icon('more');more.setAttribute('aria-label',`${item.name} options`);more.onclick=()=>{const body=dialog(item.name);paragraph(body,'GeneralUser GS SoftSynth 1.44 · S. Christian Collins');const a=document.createElement('a');a.href='./GeneralUser-LICENSE.txt';a.target='_blank';a.textContent='License';body.append(a);};row.append(more);}
+  if(isFonts&&item.id===STANDARD_FONT.id){const more=document.createElement('button');more.className='font-more';more.innerHTML=icon('more');more.setAttribute('aria-label',`${item.name} options`);more.onclick=()=>{const body=dialog(item.name);paragraph(body,'GeneralUser GS SoftSynth 1.44 · S. Christian Collins');const a=document.createElement('a');a.href='./GeneralUser-LICENSE.txt';a.target='_blank';a.textContent='License';body.append(a);};row.append(more);}
   list.append(row);
  }
  if(!list.children.length){const empty=document.createElement('p');empty.className='library-empty';empty.textContent='No sounds';list.append(empty);}
@@ -143,8 +146,6 @@ on('projects-btn','click',openProjects);
 function notifyMissing(){const missing=[...new Set(project.channels.map(c=>c.fontId))].filter(id=>!fonts.has(id));if(missing.length)toast(`${missing.length} SoundFont file(s) missing. Load the original SF2 files to restore their sounds.`,true);}
 let importingFonts=false;
 
-const fontLoads=new Map();
-async function ensureFontBlob(id){const font=fonts.get(id);if(!font)throw Error('This SoundFont is missing.');const local=fontBlob(font);if(local)return local;if(!fontLoads.has(id))fontLoads.set(id,(async()=>{toast('Downloading '+font.name+'…');const blob=await downloadFont(font);font.blob=blob;await storage.put('fonts',font);return blob;})().finally(()=>fontLoads.delete(id)));return fontLoads.get(id);}
 async function importFonts(input){const files=[...input].filter(f=>/\.sf2$/i.test(f.name));if(importingFonts){toast('Wait for the current import to finish.');return;}if(!files.length){toast('No SF2 files found.');return;}importingFonts=true;navigator.storage?.persist?.().catch(()=>{});const errors=[];let imported=0,first=null;try{for(const file of files){try{toast(`Loading ${file.name} (${imported+1}/${files.length})…`);const {presets,sampleBytes}=await inspectFont(file),id=await fontId(file);let font=fonts.get(id);if(!font){font={id,name:file.name,blob:new Blob([file]),presets,sampleBytes,size:file.size};await storage.put('fonts',font);fonts.set(id,font);}else if(!fontBlob(font)){font.blob=new Blob([file]);await storage.put('fonts',font);}first??=font;imported++;if(browserMode==='fonts')renderBrowser();}catch(e){errors.push(`${file.name}: ${e.message}`);}}if(first&&current()){checkpoint();const c=current(),preset=first.presets[0];Object.assign(c,{fontId:first.id,bank:preset.bank,program:preset.program,presetName:preset.name,name:preset.name});changed();closeBrowser();}toast(errors.length?`${imported} loaded. ${errors.join(' ')}`:`${imported} SoundFont${imported===1?'':'s'} saved.`,!!errors.length);}finally{importingFonts=false;}}
 on('sf2-input','change',e=>{const files=[...e.target.files];e.target.value='';return importFonts(files);});
 for(const event of ['dragenter','dragover'])document.addEventListener(event,e=>{if(![...e.dataTransfer.types].includes('Files'))return;e.preventDefault();if(browserMode==='fonts')$('player-browser').classList.add('drag-over');});
@@ -205,12 +206,13 @@ on('snap-picker','click',()=>showChoice('Snap',SNAP_CHOICES,roll.snapMode,mode=>
 
 new ResizeObserver(()=>{if($('envelope-graph').clientWidth)renderEnvelope();}).observe($('envelope-graph'));
 async function boot(){
- fonts.set(STANDARD_FONT.id,{...STANDARD_FONT,bundled:true});
+ for(const font of BUNDLED_FONTS)fonts.set(font.id,{...font});
  try{for(const f of await storage.all('fonts')){
   if(f.id==='factory')continue;
   if(f.buffer){f.blob=new Blob([f.buffer]);f.size=f.buffer.byteLength;delete f.buffer;await storage.put('fonts',f);}
   const oldNames=JSON.stringify(f.presets);
-  if(f.id===STANDARD_FONT.id){f.bundled=true;f.presets=STANDARD_FONT.presets;}
+  const bundled=BUNDLED_FONTS.find(font=>font.id===f.id);
+  if(bundled)Object.assign(f,bundled);
   else f.presets=f.presets.map(p=>({...p,name:cleanSf2Name(p.name)}));
   if(JSON.stringify(f.presets)!==oldNames)await storage.put('fonts',f);
   fonts.set(f.id,f);

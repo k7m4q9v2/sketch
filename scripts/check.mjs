@@ -2,7 +2,9 @@ import {readFile,readdir,stat} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
+import {openAsBlob} from 'node:fs';
+import {BUNDLED_FONTS} from '../site/bundled-fonts.js';
+import {fontId,inspectFont} from '../site/font-library.js';
 const root=path.resolve(import.meta.dirname,'../site');
 let count=0;
 for(const name of await readdir(root)){
@@ -17,10 +19,23 @@ for(const name of await readdir(root)){
  }
  count++;
 }
-const sf=await readFile(path.join(root,'GeneralUser-GS.sf2'));
-assert.equal(createHash('sha256').update(sf).digest('hex'),'00725296486f652ba42bdbf2098254762ca80239353d04b55a27454fc8edb8a8');
+assert.equal(new Set(BUNDLED_FONTS.map(f=>f.id)).size,BUNDLED_FONTS.length,'Duplicate bundled banks');
+assert.equal(new Set(BUNDLED_FONTS.map(f=>f.file)).size,BUNDLED_FONTS.length,'Duplicate bank paths');
+for(const font of BUNDLED_FONTS){
+ assert.match(font.file,/^[a-zA-Z0-9._-]+\.sf2$/);
+ const blob=await openAsBlob(path.join(root,font.file));
+ assert.equal(blob.size,font.size,font.name+': size mismatch');
+ assert.equal(await fontId(blob),font.id,font.name+': content mismatch');
+ const metadata=await inspectFont(blob);
+ metadata.presets.sort((a,b)=>a.bank-b.bank||a.program-b.program);
+ assert.deepEqual(metadata.presets,font.presets,font.name+': preset mismatch');
+ assert.equal(metadata.sampleBytes,font.sampleBytes);
+}
 const html=await readFile(path.join(root,'index.html'),'utf8');
 assert.ok(!/id="(?:account-button|shared-fonts|font-library-tabs)"/.test(html));
 const sw=await readFile(path.join(root,'sw.js'),'utf8');
-for(const [,name]of sw.matchAll(/'\.\/([^']+)'/g))await stat(path.join(root,name));
-console.log(`Static deployment checked: ${count} source files; verified GM bank; no account or upload API dependency.`);
+for(const [,name]of sw.matchAll(/'\.\/([^']+)'/g)){
+ assert.ok(!/\.sf2$/i.test(name),'SoundFont audio must not be downloaded at app installation.');
+ await stat(path.join(root,name));
+}
+console.log(`Static deployment checked: ${count} source files; ${BUNDLED_FONTS.length} verified banks; no account or upload API dependency.`);
