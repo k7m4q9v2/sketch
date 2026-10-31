@@ -15,6 +15,15 @@ function readyHost(getBlob=()=>assert.fail('unexpected font read')){
  const project=newProject();project.channels.push({...channel(),fontId:'one'},{...channel(1),fontId:'two'});
  return{host,project,messages};
 }
+test('closed or failed audio reconnects and reloads the saved SoundFont on the very first note',async t=>{
+ const previous=globalThis.AudioContext;t.after(()=>globalThis.AudioContext=previous);
+ globalThis.AudioContext=class{constructor(){this.state='suspended';}async resume(){this.state='running';}async close(){this.state='closed';}};
+ for(const broken of [false,true]){let reads=0,inits=0,disconnects=0;const messages=[],host=new AudioHost(new Map(),async()=>{reads++;return new Blob(['sample data']);});
+  host.context={state:broken?'running':'closed',close:async()=>{}};host.node={disconnect(){disconnects++;},port:{}};host.broken=broken;host.loaded.add('factory');host.ready=true;
+  host.initialize=async()=>{inits++;host.node={disconnect(){},port:{postMessage:m=>messages.push(m)}};};host.request=async(type,data)=>{messages.push({type,...data});};
+  const p=newProject();p.channels=[channel()];await host.preview(p,0,60,'first');assert.equal(reads,1);assert.equal(inits,1);assert.equal(disconnects,1);assert.ok(messages.some(m=>m.type==='previewOn'&&m.id==='first'));host.reset();await host.start(p);assert.equal(reads,2);assert.equal(inits,2);assert.ok(messages.some(m=>m.type==='start'));host.reset();
+ }
+});
 test('warm preview is dispatched synchronously without waiting for unrelated channel banks',async()=>{
  const {host,project,messages}=readyHost();host.loaded.add('one');host.signatures.set('one','*');
  const finished=host.preview(project,0,60,'touch');

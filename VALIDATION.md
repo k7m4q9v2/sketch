@@ -1,5 +1,16 @@
 # Validation — 2026-11-01
 
+## Current local revision
+
+- 90 automated checks pass, including held-note slides, independent channel cents, eraser-only deletion, selection edge scrolling, larger resize targets, whole-bar right duplication, first-note audio recovery, and final-note/release/delay-tail WAV rendering. Static checks cover 30 source files and all 13 bundled banks.
+- Song/arrangement, sampler and the Sounds drawer were removed from this web revision at the user's request. The unfinished prototype and specifications are retained outside this repository for a future APK. The IndexedDB version and unused sample store are retained to avoid deleting local prototype data; APK-only drafts cannot be edited accidentally in the web UI.
+- Browser verification at `/sketch/`: created a SoundFont channel, entered notes, started/stopped playback, opened SoundFont/Envelope/Delay/channel-cents controls, and exported audio. The native media element decoded the new WAV with readyState 4, a 2.768753-second duration and no media error.
+- Reloaded the page, reopened the saved three-note project and started playback successfully with no browser errors. This local test project remains alongside the existing draft; automatic review rejected its cleanup because both projects have the same visible name. No project was deleted.
+- This is desktop browser verification. Physical iPhone recording and Musica import remain unverified. The original rejected file and distorted recording have not been provided.
+- Slide gestures render in playback and WAV; MIDI export does not yet encode glide pitch automation. Export stops after the last audible release or echo, with a two-minute safety limit for non-decaying effect tails.
+
+## Previously published verification
+
 - 82 automated checks pass: actual WASM audio, MIDI/WAV encoding, loops, envelopes, delay, touch gestures, snapping, copy/paste, octave edits, large-bank subsetting, bundled-bank caching, immediate warm previews, preview cancellation, context recovery, page visibility lifecycle, and validation of shared WAV files.
 - Corrected a remaining visibility handler that called Stop when the page became hidden, defeating context recovery. A simulated hide/show pair in the actual browser kept Stop playback active. Page navigation and explicit Stop still cancel playback; tests cover focus after a user stop.
 - Export results now include a native audio player using the exact File supplied to Save file / the share sheet. WAV chunk bounds, PCM format and byte counts are validated before exposing the file. Closing the result pauses playback and releases its blob URL. Cancellation during SoundFont preparation no longer reopens an export result later.
