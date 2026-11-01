@@ -2,6 +2,8 @@
 
 ## Current local revision
 
+- Instrument/SF2 choices now dispatch audition before `changed()` performs the synchronous full UI render, and close the browser before that render so the preset list is not rebuilt needlessly. Previous/next preset buttons use the same path. Opening sound settings now prepares the current channel's audio before selection. Static package checks and 14 focused audio/preview tests pass; actual iPhone touch-to-sound latency and browser UI behavior remain unverified while browser use is disabled. Cache is v15.
+
 - 120 checks pass. New-note audition now begins on pointer down rather than pointer release; committing the note does not retrigger it. Scroll, pinch, cancelled touch and long-press selection release/cancel that preview. Existing horizontal note movement and resizing remain silent. Tests cover onset before MIDI creation, no double trigger, and cancellation. Actual iPhone output latency is unverified; no playhead synchronization change is claimed because the user clarified that the issue is touch-to-sound timing.
 - Stem WAV filenames now use only the project name. Removed export format/size/arrangement paragraphs and redundant channel duplicate/delete descriptions, while retaining concise clipping and tail-limit warnings. The export choice still identifies Stems; its resulting preview title is Audio. Cache is v14. Browser UI QA remains unavailable while browser use is disabled.
 

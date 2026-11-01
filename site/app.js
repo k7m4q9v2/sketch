@@ -72,17 +72,17 @@ function renderBrowser(){
   const row=document.createElement('div');row.className='font-list-row';const chosen=isFonts?item.id===c.fontId:item.bank===c.bank&&item.program===c.program;
   const b=document.createElement('button');b.className='selector-item'+(chosen?' selected':'');b.setAttribute('aria-label',item.name);
   const name=document.createElement('span');name.textContent=item.name;const meta=document.createElement('small');meta.textContent=isFonts?`${item.presets.length} sounds`:`${item.bank} : ${String(item.program).padStart(3,'0')}`;b.append(name,meta);
-  b.onclick=()=>Promise.resolve(isFonts?chooseFont(item):choosePreset(item)).then(closeBrowser).catch(e=>toast(e.message,true));row.append(b);
+  b.onclick=()=>Promise.resolve(isFonts?chooseFont(item):choosePreset(item)).catch(e=>toast(e.message,true));row.append(b);
   if(isFonts&&item.id===STANDARD_FONT.id){const more=document.createElement('button');more.className='font-more';more.innerHTML=icon('more');more.setAttribute('aria-label',`${item.name} options`);more.onclick=()=>{const body=dialog(item.name);paragraph(body,'GeneralUser GS SoftSynth 1.44 · S. Christian Collins');const a=document.createElement('a');a.href='./GeneralUser-LICENSE.txt';a.target='_blank';a.textContent='License';body.append(a);};row.append(more);}
   list.append(row);
  }
  if(!list.children.length){const empty=document.createElement('p');empty.className='library-empty';empty.textContent='No sounds';list.append(empty);}
 }
-async function chooseFont(font){audio.unlock().catch(e=>toast(e.message,true));await ensureFontBlob(font.id);checkpoint();const c=current(),p=font.presets[0];c.fontId=font.id;c.bank=p.bank;c.program=p.program;c.presetName=p.name;c.name=p.name;changed();auditionSelection();}
+async function chooseFont(font){audio.unlock().catch(e=>toast(e.message,true));await ensureFontBlob(font.id);checkpoint();const c=current(),p=font.presets[0];c.fontId=font.id;c.bank=p.bank;c.program=p.program;c.presetName=p.name;c.name=p.name;auditionSelection();closeBrowser();changed();}
 on('font-picker','click',()=>openBrowser('fonts'));on('preset-picker','click',()=>openBrowser('presets'));on('selector-back','click',closeBrowser);on('selector-search','input',()=>renderBrowser());
 function nextPreset(step){const c=current(),presets=fonts.get(c.fontId)?.presets||[];if(!presets.length)return;const i=presets.findIndex(p=>p.bank===c.bank&&p.program===c.program);choosePreset(presets[(i+step+presets.length)%presets.length]);}
 on('preset-prev','click',()=>nextPreset(-1));on('preset-next','click',()=>nextPreset(1));
-function choosePreset(p){checkpoint();const c=current();const rename=c.name===c.presetName||c.name.startsWith('Channel ');c.bank=p.bank;c.program=p.program;c.presetName=p.name;if(rename)c.name=p.name;changed();auditionSelection();}
+function choosePreset(p){checkpoint();const c=current();const rename=c.name===c.presetName||c.name.startsWith('Channel ');c.bank=p.bank;c.program=p.program;c.presetName=p.name;if(rename)c.name=p.name;auditionSelection();closeBrowser();changed();}
 let selectedSoundPreview=null;
 function auditionSelection(){if(selectedSoundPreview)previewOff(selectedSoundPreview);const id='sound-'+uid();selectedSoundPreview=id;const pitch=roll.selectedNote?.pitch??current().notes[0]?.pitch??60;preview(pitch,id).then(()=>setTimeout(()=>{previewOff(id);if(selectedSoundPreview===id)selectedSoundPreview=null;},350));}
 const timeText=v=>v<1?`${Math.round(v*1000)} ms`:`${v.toFixed(2)} s`;
@@ -208,7 +208,7 @@ const transportDock=document.createElement('div');transportDock.className='trans
 function setEditor(open){document.querySelector('.sequencer').classList.toggle('show-roll',open);$('app').classList.toggle('editing',open);requestAnimationFrame(()=>roll.draw());}
 function positionSoundPlay(){const r=transportDock.getBoundingClientRect();$('sound-dialog').style.setProperty('--transport-left',r.left+'px');$('sound-dialog').style.setProperty('--transport-top',r.top+'px');$('sound-dialog').style.setProperty('--transport-width',r.width+'px');}
 new ResizeObserver(()=>{if($('sound-dialog').open)positionSoundPlay();}).observe($('app'));
-function openSound(){if(!current())return;closeBrowser();positionSoundPlay();$('sound-transport').append(transport);$('sound-dialog').showModal();requestAnimationFrame(renderEnvelope);}
+function openSound(){if(!current())return;warmChannel();closeBrowser();positionSoundPlay();$('sound-transport').append(transport);$('sound-dialog').showModal();requestAnimationFrame(renderEnvelope);}
 on('sound-close','click',()=>$('sound-dialog').close());on('roll-channel','click',openSound);
 on('main-menu','click',showExport);
 
