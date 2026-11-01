@@ -64,3 +64,9 @@
 - The public `site/` directory contains only app assets and the 13 explicitly bundled banks. It contains no user projects, server code, account database, or credentials. Test fixtures remain outside the deployed directory. SoundFonts imported by visitors stay on their devices.
 - Physical iPhone Safari recording performance is not verified. The reported delayed output and silent/distorted saved recording are not claimed resolved on device. The app no longer stops/reset its sequencer on a temporary audio-context interruption. Low-latency playback is requested, but hardware/browser capture latency is outside the app's direct control.
 - Data from the previous chatgpt.site origin is retained there and is not automatically transferred to the new domain.
+
+## 2026-11-02 — Direct contour drawing
+- Melody lab draws on the actual piano-roll canvas. Draft overlays preserve existing MIDI until Add notes.
+- Rhythm capture runs at half the project BPM with four count-in beats. Selected piano-roll Snap is used, including Cell, adaptive Line, and none.
+- Pointer down/up records onset and held duration. Audition releases on pointer up/cancel; generated lengths survive regeneration and key/octave changes.
+- 128 tests pass. Desktop browser verified drawing, slow count-in, short/held taps, Add notes, and mobile 390x844 layout. No console errors. Physical iPhone timing remains unverified.

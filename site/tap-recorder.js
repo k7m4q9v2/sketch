@@ -1,3 +1,5 @@
+import {snapTicks,snapPosition} from './snap.js';
+import {PPQ} from './model.js';
 import {quantizeTaps} from './melody.js';
 export function tapClock(ctx,now=performance.now()){
  if(!ctx)return 0;
@@ -5,7 +7,7 @@ export function tapClock(ctx,now=performance.now()){
  return Math.max(0,ctx.currentTime-(ctx.baseLatency||0)-(ctx.outputLatency||0));
 }
 export class TapRecorder{
- constructor(ctx,{bpm,bars,metronome=true,status,done}){Object.assign(this,{ctx,bpm,bars,metronome,status,done});this.taps=[];this.nodes=[];}
+ constructor(ctx,{bpm,bars,metronome=true,status,done,snapMode,beatWidth=72}){Object.assign(this,{ctx,bpm,bars,metronome,status,done,snapMode,beatWidth});this.taps=[];this.lengths=[];this.active=null;this.nodes=[];}
  start(){
   this.beat=60/this.bpm;this.first=this.ctx.currentTime+.15;this.origin=this.first+4*this.beat;this.end=this.origin+this.bars*4*this.beat;this.next=0;this.running=true;
   const schedule=()=>{if(!this.running)return;if(this.ctx.state!=='running'){this.cancel();this.done(null);return;}
@@ -16,7 +18,8 @@ export class TapRecorder{
    if(now>=this.end){this.finish();return;}this.timer=setTimeout(schedule,25);
   };schedule();
  }
- tap(){if(!this.running)return null;const time=tapClock(this.ctx)-this.origin;if(time>=-.045&&time<this.end-this.origin){this.taps.push(time);return Math.max(0,time);}return null;}
- finish(){const result=quantizeTaps(this.taps,this.bpm,this.bars);this.cancel();this.done(result);}
+ tap(){if(!this.running)return null;const time=tapClock(this.ctx)-this.origin;if(time>=-.045&&time<this.end-this.origin){this.release();this.active=this.taps.length;this.taps.push(Math.max(0,time));return Math.max(0,time);}return null;}
+ release(){if(this.active===null)return;this.lengths[this.active]=Math.max(0,Math.min(tapClock(this.ctx),this.end)-this.origin-this.taps[this.active]);this.active=null;}
+ finish(){this.release();let result;if(this.snapMode===undefined)result=quantizeTaps(this.taps,this.bpm,this.bars);else{const grid=snapTicks(this.snapMode,this.beatWidth),end=this.bars*4*PPQ,events=new Map();this.taps.forEach((time,i)=>{const start=snapPosition(time*this.bpm/60*PPQ,this.snapMode,this.beatWidth);if(start>=end)return;const duration=Math.max(grid,Math.round((this.lengths[i]??0)*this.bpm/60*PPQ/grid)*grid);events.set(start,Math.min(end-start,duration));});const ticks=[...events.keys()].sort((a,b)=>a-b);result={grid,ticks,durations:ticks.map(t=>events.get(t))};}this.cancel();this.done(result);}
  cancel(){this.running=false;clearTimeout(this.timer);for(const {osc,gain} of this.nodes){try{osc.stop();}catch{}osc.disconnect();gain.disconnect();}this.nodes=[];}
 }
