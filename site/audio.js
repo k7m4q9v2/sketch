@@ -7,7 +7,9 @@ export class AudioHost extends EventTarget{
   this.generation++;const ctx=this.context;this.context=null;this.node?.disconnect();if(this.node)this.node.port.onmessage=null;this.node=null;
   for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(Error('Audio session changed. Tap Play again.'));}this.pending.clear();
   clearTimeout(this.projectTimer);this.projectTimer=null;this.ready=false;this.broken=false;this.initializing=null;this.loaded.clear();this.signatures.clear();this.loading.clear();this.previewTokens.clear();this.lastProject=null;
-  if(ctx&&ctx.state!=='closed')ctx.close().catch(()=>{});
+  // Export preview must wait until the live output graph is actually closed.
+  if(ctx&&ctx.state!=='closed')return ctx.close().catch(()=>{});
+  return Promise.resolve();
  }
  unlock(){
   if(this.context?.state==='closed'||this.broken)this.reset();

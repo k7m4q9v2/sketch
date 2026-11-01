@@ -89,3 +89,13 @@ test('return recovery reconnects once at the last position and respects a stop d
 test('healthy return probes the render graph without restarting the loop',async()=>{
  const {host,project,messages}=readyHost();await host.recover(project,960,()=>true);assert.deepEqual(messages,[{type:'probe'}]);
 });
+
+test('releasing live audio disconnects immediately and waits for closure before media preview',async()=>{
+ const host=new AudioHost(new Map(),()=>{});let closed,disconnected=0;
+ host.context={state:'running',close:()=>new Promise(resolve=>closed=resolve)};
+ host.node={disconnect:()=>disconnected++,port:{onmessage:()=>{}}};host.ready=true;host.loaded.add('factory');
+ let finished=false;const released=host.reset().then(()=>finished=true);
+ assert.equal(disconnected,1);assert.equal(host.context,null);assert.equal(host.node,null);assert.equal(host.ready,false);assert.equal(host.loaded.size,0);
+ await Promise.resolve();assert.equal(finished,false);closed();await released;assert.equal(finished,true);
+ await host.reset();assert.equal(disconnected,1,'idle preview does not recreate a live graph');
+});

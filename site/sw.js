@@ -1,4 +1,4 @@
-const PREFIX='sketch-device:'+new URL('./',self.registration.scope).pathname+':',CACHE=PREFIX+'v11';
+const PREFIX='sketch-device:'+new URL('./',self.registration.scope).pathname+':',CACHE=PREFIX+'v12';
 const DEV=['localhost','127.0.0.1'].includes(self.location.hostname);
 const FILES=['./','./index.html','./minimal.css','./finish.css','./editor.css','./render-audio.js','./icons.js','./app.js','./font-library.js','./bundled-fonts.js','./additional-fonts.js','./font-cache.js','./file-drop.js','./sf2-subset.js','./snap.js','./share.js','./model.js','./envelope.js','./knob.js','./delay.js','./audio.js','./audio-timing.js','./audio-lifecycle.js','./audio-worklet.js','./synth-core.js','./font-worker.js','./export.js','./export-worker.js','./wav-file.js','./storage.js','./piano-roll.js','./lumafont.wasm','./standard-font.js','./sf2-name.js','./GeneralUser-LICENSE.txt','./THIRD_PARTY_NOTICES.txt','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));

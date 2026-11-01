@@ -175,6 +175,7 @@ async function renderWav(tail,mode='mix'){
  const b=dialog('Preparing audio…'),progress=document.createElement('progress');progress.max=1;progress.value=0;b.append(progress);
  const failed=error=>{if(token!==exportRun)return;exportWorker?.terminate();exportWorker=null;showExport();toast(error.message||String(error),true);};
  try{
+  await audio.reset();if(token!==exportRun)return;
   for(const id of ids){await ensureFontBlob(id);if(token!==exportRun)return;}
   const worker=new Worker('./export-worker.js',{type:'module'});exportWorker=worker;
   worker.onmessage=({data})=>{
@@ -191,7 +192,7 @@ async function renderWav(tail,mode='mix'){
     const player=document.createElement('audio');player.controls=true;player.preload='metadata';player.setAttribute('aria-label','Exported audio');player.style.width='100%';body.append(player);exportPreview=player;
     // This player and the share sheet receive the exact same file. No Web Audio
     // conversion or live rendering is involved in checking the exported audio.
-    player.onplay=()=>stop();player.onerror=()=>toast('This browser could not read the exported audio file.',true);
+    player.onplay=()=>{stop();audio.reset();};player.onerror=()=>toast('This browser could not read the exported audio file.',true);
     player.onloadedmetadata=()=>{if(Math.abs(player.duration-info.duration)>.05)toast('The exported audio duration could not be verified.',true);};
     player.src=download(file,filename,body).url;
    }catch(error){failed(error);}
