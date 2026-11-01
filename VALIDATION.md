@@ -70,3 +70,6 @@
 - Rhythm capture runs at half the project BPM with four count-in beats. Selected piano-roll Snap is used, including Cell, adaptive Line, and none.
 - Pointer down/up records onset and held duration. Audition releases on pointer up/cancel; generated lengths survive regeneration and key/octave changes.
 - 128 tests pass. Desktop browser verified drawing, slow count-in, short/held taps, Add notes, and mobile 390x844 layout. No console errors. Physical iPhone timing remains unverified.
+
+## 2026-11-02 — Remove contour melody experiment
+User requested removing the drawing feature. Removed Melody lab UI, runtime modules, cache entries and feature-only tests. Existing generated notes remain ordinary MIDI; no project/storage/audio migration. Static deployment checks and all 120 remaining tests pass. Cache v18 removes obsolete cached assets on activation.
