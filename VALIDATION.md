@@ -2,6 +2,9 @@
 
 ## Current local revision
 
+- 120 checks pass. New-note audition now begins on pointer down rather than pointer release; committing the note does not retrigger it. Scroll, pinch, cancelled touch and long-press selection release/cancel that preview. Existing horizontal note movement and resizing remain silent. Tests cover onset before MIDI creation, no double trigger, and cancellation. Actual iPhone output latency is unverified; no playhead synchronization change is claimed because the user clarified that the issue is touch-to-sound timing.
+- Stem WAV filenames now use only the project name. Removed export format/size/arrangement paragraphs and redundant channel duplicate/delete descriptions, while retaining concise clipping and tail-limit warnings. The export choice still identifies Stems; its resulting preview title is Audio. Cache is v14. Browser UI QA remains unavailable while browser use is disabled.
+
 - 118 checks pass. A ruler tap now selects a project-scoped playback start point as well as seeking. Stop returns the playhead to this point; repeated Play starts there again. Channel changes retain it, Go to start clears it, and switching projects or shortening the loop beyond the point resets it to zero. The point does not modify saved MIDI or the loop range. Tests cover repeated AudioHost Play/Stop, point replacement/reset and loop bounds. Cache is v13; browser QA is unavailable while browser use is disabled.
 
 - 115 checks pass. WAV export now disconnects the live AudioWorklet graph and waits for its AudioContext to close before exposing the native media preview. The preview's Play handler also releases any subsequently opened live graph. A regression test verifies immediate disconnection, waiting for closure and idempotent release; first-note engine recreation remains covered. Cache is v12.

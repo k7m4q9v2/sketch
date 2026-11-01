@@ -66,3 +66,23 @@ test('tapping a selected group member deletes only that note',()=>{
 test('slide properties survive copy and both paste operations',()=>{
  const s=setup(),n={...note(70,960,480),slide:true};s.roll.channel.notes=[n];s.roll.select(n.id);s.roll.copySelected();s.roll.pasteTick=1920;s.roll.pasteNotes();assert.equal(s.roll.selectedNote.slide,true);s.roll.pasteRight();assert.equal(s.roll.selectedNote.slide,true);
 });
+
+test('new-note audition begins on touch down, before release or MIDI creation, without retriggering',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const s=setup(),heard=[],off=[];
+ s.roll.callbacks.preview=(pitch,id)=>heard.push({pitch,id});s.roll.callbacks.previewOff=id=>off.push(id);
+ s.roll.down(s.event(60,85));assert.equal(heard.length,1);assert.equal(s.roll.channel.notes.length,0);
+ t.mock.timers.tick(100);s.roll.up(s.event(60,85));assert.equal(heard.length,1);assert.equal(s.roll.channel.notes.length,1);assert.equal(off.length,0);
+ await Promise.resolve();t.mock.timers.tick(180);assert.deepEqual(off,[heard[0].id]);
+});
+test('scroll, pinch, cancellation and box selection release the early preview',t=>{
+ t.mock.timers.enable({apis:['setTimeout']});
+ for(const action of ['scroll','pinch','cancel','box']){
+  const s=setup(),heard=[],off=[];s.roll.callbacks.preview=(pitch,id)=>heard.push(id);s.roll.callbacks.previewOff=id=>off.push(id);
+  s.roll.down(s.event(120,150));
+  if(action==='scroll')s.roll.move(s.event(160,150));
+  if(action==='pinch')s.roll.down(s.event(220,150,2));
+  if(action==='box')t.mock.timers.tick(451);
+  s.roll.up(s.event(120,150),action==='cancel');if(action==='pinch')s.roll.up(s.event(220,150,2));
+  assert.ok(off.includes(heard[0]),action);assert.equal(s.roll.channel.notes.length,0,action);
+ }
+});
