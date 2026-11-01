@@ -12,7 +12,12 @@ export async function renderAudio({project,fonts=[],tail=true,mode='mix'},wasm,p
  if(mode==='mix')return renderPass(project,engine,rate,tail,progress);
  const channels=audible.filter(c=>c.notes.some(n=>!n.slide&&n.start<project.bars*4*PPQ));
  if(!channels.length)throw Error('Add notes before exporting stems.');
- const results=[];let bytes=0;
+ // Repeat short patterns (or crop long ones) for a four-bar full-mix intro.
+ const introProject=structuredClone(project);introProject.bars=4;
+ const loopTicks=project.bars*4*PPQ,introTicks=4*4*PPQ;
+ for(const c of introProject.channels){const originals=c.notes;c.notes=[];for(let offset=0;offset<introTicks;offset+=loopTicks)for(const n of originals)if(n.start<loopTicks&&n.start+offset<introTicks)c.notes.push({...n,start:n.start+offset,duration:Math.min(n.duration,introTicks-n.start-offset)});}
+ const intro=renderPass(introProject,engine,rate,tail,()=>{});
+ const results=[];let bytes=intro.buffer.byteLength;
  for(const [index,c]of channels.entries()){
   const result=renderPass({...project,channels:[{...c,mute:false,solo:false}]},engine,rate,tail,value=>progress((index+value)/channels.length));
   results.push({...result,name:c.name,id:c.id});bytes+=result.buffer.byteLength;
@@ -21,12 +26,14 @@ export async function renderAudio({project,fonts=[],tail=true,mode='mix'},wasm,p
  }
  const barFrames=rate*240/project.bpm;
  const spacingBars=Math.max(project.bars,...results.map(r=>Math.ceil((r.buffer.byteLength-44)/4/barFrames)));
- const stems=results.map((r,i)=>({id:r.id,name:r.name,startFrame:Math.round(i*(spacingBars+1)*barFrames),frames:(r.buffer.byteLength-44)/4}));
+ const introFrames=(intro.buffer.byteLength-44)/4,introBars=Math.max(4,Math.ceil(introFrames/barFrames));
+ const stems=results.map((r,i)=>({id:r.id,name:r.name,startFrame:Math.round((introBars+1+i*(spacingBars+1))*barFrames),frames:(r.buffer.byteLength-44)/4}));
  const frames=stems.at(-1).startFrame+stems.at(-1).frames;
  if(frames*4>256*1024*1024)throw Error('Stem export is too long. Shorten the loop or export fewer channels.');
  const buffer=wavHeader(frames,rate),pcm=new Uint8Array(buffer);
+ pcm.set(new Uint8Array(intro.buffer,44),44);
  results.forEach((r,i)=>pcm.set(new Uint8Array(r.buffer,44),44+stems[i].startFrame*4));
- return {buffer,stems,spacingBars,gapBars:1,peak:Math.max(...results.map(r=>r.peak)),clipped:results.reduce((n,r)=>n+r.clipped,0),tailLimited:results.some(r=>r.tailLimited)};
+ return {buffer,stems,intro:{bars:4,frames:introFrames},spacingBars,gapBars:1,peak:Math.max(intro.peak,...results.map(r=>r.peak)),clipped:results.reduce((n,r)=>n+r.clipped,intro.clipped),tailLimited:intro.tailLimited||results.some(r=>r.tailLimited)};
 }
 
 function renderPass(project,engine,rate,tail,progress){

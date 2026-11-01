@@ -125,17 +125,17 @@ function renderAll(){selected=clamp(selected,0,Math.max(0,project.channels.lengt
 function renderPlayButton(){const interrupted=playing&&audio.context?.state!=='running';$('play').classList.toggle('playing',playing&&!interrupted);$('play').setAttribute('aria-label',interrupted?'Resume playback':playing?'Stop playback':'Play');$('play').innerHTML=icon(playing&&!interrupted?'pause':'play');}
 async function startPlayback(tick=0){
  if(!ready||!project.channels.length)return;const token=++playToken;startingPlayback=true;$('play').disabled=true;
- try{await audio.ensure(project);if(token!==playToken)return;heldPreviews.clear();audio.send('start',{tick});playing=true;roll.tick=tick;roll.updatePlayhead();renderPlayButton();}
+ try{await audio.prepare(project);if(token!==playToken)return;heldPreviews.clear();audio.send('start',{tick});playing=true;roll.tick=tick;roll.updatePlayhead();renderPlayButton();}
  catch(error){if(token===playToken){stop();throw error;}}finally{if(token===playToken){startingPlayback=false;$('play').disabled=!ready||!project.channels.length;}}
 }
 let startingPlayback=false;
 function stop(){playToken++;startingPlayback=false;playing=false;audio.stop();heldPreviews.clear();$('play').disabled=!ready||!project.channels.length;renderPlayButton();$('position').innerHTML='01<span>:</span>01<span>:</span>00';roll.tick=-1;roll.draw();}
-on('play','click',async()=>{if(playing&&!audio.broken){if(audio.context?.state!=='running'){try{await audio.resume();}catch(error){stop();throw error;}renderPlayButton();return;}stop();return;}await startPlayback();});on('stop','click',stop);
+on('play','click',async()=>{if(playing&&!audio.broken){if(audio.context?.state!=='running'){try{const token=playToken;await audio.recover(project,Math.max(0,roll.tick),()=>playing&&playToken===token);}catch(error){stop();throw error;}renderPlayButton();return;}stop();return;}await startPlayback();});on('stop','click',stop);
 on('go-to-start','click',async()=>{roll.x=0;roll.tick=0;roll.draw();if(playing||startingPlayback)await startPlayback(0);else{$('position').innerHTML='01<span>:</span>01<span>:</span>00';}});
 audio.addEventListener('position',({detail:d})=>{if(playing&&d.playing){roll.tick=d.tick;roll.updatePlayhead();const beat=Math.floor(d.tick/PPQ);$('position').innerHTML=`${String(Math.floor(beat/4)+1).padStart(2,'0')}<span>:</span>${String(beat%4+1).padStart(2,'0')}<span>:</span>${String(Math.floor(d.tick%PPQ/PPQ*100)).padStart(2,'0')}`;}$('meter-fill').style.width=Math.min(100,d.peak*200)+'%';});
 audio.addEventListener('state',({detail:state})=>{$('audio-status').textContent=state==='running'?'AUDIO READY':'Tap Play to resume audio';$('audio-light').classList.toggle('on',state==='running');renderPlayButton();});audio.addEventListener('error',({detail})=>{stop();toast(detail.error,true);});
 window.addEventListener('pagehide',()=>audio.reset());
-bindAudioLifecycle({isPlaying:()=>playing,resume:()=>audio.resume(),stop,save:()=>dirty?save():Promise.resolve()});
+bindAudioLifecycle({isPlaying:()=>playing,resume:()=>{const token=playToken;return audio.recover(project,Math.max(0,roll.tick),()=>playing&&playToken===token);},stop,save:()=>dirty?save():Promise.resolve()});
 on('bars','change',()=>{checkpoint();project.bars=Number($('bars').value);changed();});on('metronome','click',()=>{checkpoint();project.metronome=!project.metronome;changed();});
 on('add-channel','click',()=>{if(project.channels.length>=MAX_CHANNELS)return;checkpoint();const c=channel(project.channels.length);c.fontId=current()?.fontId??STANDARD_FONT.id;const p=fonts.get(c.fontId)?.presets[0];if(p){c.bank=p.bank;c.program=p.program;c.presetName=p.name;c.name=p.name;}project.channels.push(c);selected=project.channels.length-1;changed();warmChannel();});
 on('adsr-enabled','change',()=>{checkpoint();current().adsr.enabled=$('adsr-enabled').checked;changed();});on('env-tempo','change',()=>{checkpoint();current().adsr.tempo=$('env-tempo').checked;changed();});
@@ -168,7 +168,7 @@ document.addEventListener('dragleave',e=>{if(!e.relatedTarget||!$('player-browse
 document.addEventListener('drop',e=>{if(![...e.dataTransfer.types].includes('Files'))return;e.preventDefault();$('player-browser').classList.remove('drag-over');const files=droppedSoundFonts(e.dataTransfer);files.then(importFonts).catch(error=>toast(error.message,true));});
 function download(blob,name,body){const file=blob instanceof File?blob:new File([blob],name,{type:blob.type}),url=URL.createObjectURL(file);objectUrls.push(url);const a=document.createElement('a');a.href=url;a.download=file.name;a.textContent='Save file';a.onclick=()=>exportPreview?.pause();if(body){const result=document.createElement('div');result.className='export-result';if(canShareFile(file)){const button=document.createElement('button');button.className='share-file-button';button.textContent='Export';button.onclick=async()=>{button.disabled=true;try{exportPreview?.pause();stop();await shareFile(file);}catch(e){toast('Could not open sharing. Use Save file.',true);}finally{button.disabled=false;}};result.append(button);}result.append(a);body.append(result);}return {url,a};}
 const safeName=()=>project.name.replace(/[\\/:*?"<>|]/g,'_').slice(0,70)||'Sketch';
-function showExport(){if(!project.channels.length)return;const b=dialog('Export');action(b,'Audio','WAV',()=>renderWav(true));action(b,'Stems','One WAV · 1 bar gaps',()=>renderWav(true,'stems'));action(b,'MIDI','.mid',()=>{const body=dialog('MIDI');download(new Blob([midiBytes(project)],{type:'audio/midi'}),safeName()+'.mid',body);});}
+function showExport(){if(!project.channels.length)return;const b=dialog('Export');action(b,'Audio','WAV',()=>renderWav(true));action(b,'Stems','4-bar mix + parts · 1 bar gaps',()=>renderWav(true,'stems'));action(b,'MIDI','.mid',()=>{const body=dialog('MIDI');download(new Blob([midiBytes(project)],{type:'audio/midi'}),safeName()+'.mid',body);});}
 on('export-btn','click',showExport);
 async function renderWav(tail,mode='mix'){
  const token=++exportRun,snapshot=clone(project),filename=safeName()+(mode==='stems'?' - Stems':'')+'.wav',ids=[...new Set(activeChannels(snapshot).map(c=>c.fontId))];stop();
@@ -185,7 +185,7 @@ async function renderWav(tail,mode='mix'){
     if(data.error)throw Error(data.error);
     const file=wavFile(data.buffer,filename),info=inspectWav(data.buffer),body=dialog(mode==='stems'?'Stems':'Audio');
     paragraph(body,`44.1 kHz · Stereo · 16-bit · ${(file.size/1024/1024).toFixed(1)} MB`);
-    if(data.stems)paragraph(body,`${data.stems.length} channels · 1 bar gaps`);
+    if(data.stems)paragraph(body,`4-bar mix + ${data.stems.length} parts · 1 bar gaps`);
     if(data.tailLimited)paragraph(body,'The effect tail reached the two-minute limit.');
     if(data.clipped)paragraph(body,'Clipping detected. Lower the channel volumes and export again.');
     const player=document.createElement('audio');player.controls=true;player.preload='metadata';player.setAttribute('aria-label','Exported audio');player.style.width='100%';body.append(player);exportPreview=player;

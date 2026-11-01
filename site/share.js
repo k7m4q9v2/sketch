@@ -4,5 +4,5 @@ export function canShareFile(file,nav=navigator){
 // Call directly from a button click, after the file has finished rendering.
 export async function shareFile(file,nav=navigator){
  if(!canShareFile(file,nav))return false;
- try{await nav.share({files:[file],title:file.name});return true;}catch(error){if(error.name==='AbortError')return true;throw error;}
+ try{await nav.share({files:[file]});return true;}catch(error){if(error.name==='AbortError')return true;throw error;}
 }

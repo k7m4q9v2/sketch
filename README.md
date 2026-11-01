@@ -55,3 +55,5 @@ Export → Stemsは、発音するチャンネルをラック順に1本のステ
 標準音源は16個、計2,475音色です。GeneralUser GSに加え、Pokemon HGSS / DPPt / Black and White 2 / Emerald、Mother 3 / 1+2、New Super Mario Bros DS、Lil'Sness、GenesiSF、KEYGEN、SNES、gm、GS Wavetable Synth、Mario Party DS、PW AAを同梱しています。GeneralUser GS以外の音源容量は約171MiBです。`site/bundled-fonts.js` と `site/additional-fonts.js` が一覧・音色・ファイルの識別情報を持ちます。
 
 GeneralUser GSはMicrosoft GS Wavetableそのものではありません。GeneralUser GSのライセンスは `site/GeneralUser-LICENSE.txt`、音源エンジンの表示は `site/THIRD_PARTY_NOTICES.txt` を参照してください。
+
+ステムの先頭には全体の4小節ミックスを付けます（短いパターンは繰り返し、長いパターンは先頭4小節）。その後、1小節の無音を挟んで各パートを並べます。共有は音声ファイルのみを渡します。音源処理の応答が途切れた場合、再生時に音源を作り直します。

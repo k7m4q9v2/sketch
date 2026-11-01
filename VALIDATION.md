@@ -2,6 +2,10 @@
 
 ## Current local revision
 
+- 114 checks pass. A render-thread probe now verifies the graph actually rendered a block before Play proceeds. Failed resume or probe recreates the context and reloads banks without reloading the page; return recovery keeps the last position and respects a concurrent Stop. The actual WASM worklet test verifies probe acknowledgement after non-silent rendering.
+- Stems now begins with a four-bar full mix, repeating shorter patterns or cropping longer ones, then exports individual parts. Whole-bar spacing and one-bar silence remain; a separate PCM comparison verifies the four-bar intro against a standalone mix. File sharing supplies only the WAV File, with no title, text or URL. Cache is v11.
+- Local browser verification could not run because browser use is disabled in Work settings. iPhone screen recording distortion with the built-in speaker (recording microphone off, headphones unaffected) remains unverified/unresolved. No speculative device or audio-session setting change is claimed to fix it. [untitled] handoff uses the existing iOS file share sheet; direct selection of an existing [untitled] project from Sketch is not implemented.
+
 - 109 automated checks pass; static checks cover 31 source files and all 16 banks. App cache version is v10. New coverage checks preview dispatch before a large MIDI update, the actual WASM preview sound, output-clock playhead alignment, safe pencil tap deletion, and sequential stem PCM.
 - Warm auditions send only the current sound settings before the queued project update. Opening a saved project prepares its fonts; playhead messages are aligned to the browser's output clock when available. These reduce app-side waiting and visual lead; physical iPhone output latency remains unverified.
 - Pencil-mode note taps delete on release and Undo restores them. Resize, drag, cancelled touch, pinch and long-press selection do not delete a note. Eraser swipe deletion remains available.

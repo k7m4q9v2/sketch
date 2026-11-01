@@ -72,3 +72,20 @@ test('resuming interrupted audio retains the existing engine, banks and transpor
  assert.deepEqual(messages,[],'resume must not stop, restart or replace the sequencer');
  await host.resume();assert.equal(resumes,1);
 });
+
+test('dead audio graph is recreated on Play without a page reload',async()=>{
+ const {host,project,messages}=readyHost();let checks=0,resets=0,prepares=0;
+ host.ensure=async()=>{prepares++;};host.request=async()=>{if(++checks===1)throw Error('silent graph');};host.reset=()=>{resets++;};
+ await host.start(project,960);assert.equal(resets,1);assert.equal(prepares,2);assert.equal(checks,2);assert.deepEqual(messages.at(-1),{type:'start',tick:960});
+});
+test('return recovery reconnects once at the last position and respects a stop during preparation',async()=>{
+ for(const cancel of [false,true]){
+  const {host,project,messages}=readyHost();let release,resets=0,playing=true;
+  host.resume=async()=>{throw Error('interrupted');};host.reset=()=>{resets++;};host.prepare=()=>new Promise(resolve=>release=resolve);
+  const a=host.recover(project,1440,()=>playing),b=host.recover(project,1440,()=>playing);await Promise.resolve();
+  if(cancel)playing=false;release();await Promise.all([a,b]);assert.equal(resets,1);assert.equal(messages.filter(m=>m.type==='start').length,cancel?0:1);if(!cancel)assert.equal(messages.at(-1).tick,1440);
+ }
+});
+test('healthy return probes the render graph without restarting the loop',async()=>{
+ const {host,project,messages}=readyHost();await host.recover(project,960,()=>true);assert.deepEqual(messages,[{type:'probe'}]);
+});
