@@ -2,6 +2,8 @@
 
 ## Current local revision
 
+- 118 checks pass. A ruler tap now selects a project-scoped playback start point as well as seeking. Stop returns the playhead to this point; repeated Play starts there again. Channel changes retain it, Go to start clears it, and switching projects or shortening the loop beyond the point resets it to zero. The point does not modify saved MIDI or the loop range. Tests cover repeated AudioHost Play/Stop, point replacement/reset and loop bounds. Cache is v13; browser QA is unavailable while browser use is disabled.
+
 - 115 checks pass. WAV export now disconnects the live AudioWorklet graph and waits for its AudioContext to close before exposing the native media preview. The preview's Play handler also releases any subsequently opened live graph. A regression test verifies immediate disconnection, waiting for closure and idempotent release; first-note engine recreation remains covered. Cache is v12.
 - Compared the supplied live screen recording, exported WAV and native-preview screen recording locally. Both recordings contain frequent short near-silent gaps; the supplied WAV does not have that dropout pattern. The native-preview recording proves the symptom is not exclusive to live synthesis. The old preview left a running, silent AudioWorklet context attached; this revision removes that concurrent graph. This is a targeted change for on-device testing, not a verified cure for iOS recording. User recordings and decoded audio remain outside the published repository. Browser use is still disabled, so no new browser or physical iPhone QA is claimed.
 
