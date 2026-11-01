@@ -2,6 +2,14 @@
 
 ## Current local revision
 
+- 109 automated checks pass; static checks cover 31 source files and all 16 banks. App cache version is v10. New coverage checks preview dispatch before a large MIDI update, the actual WASM preview sound, output-clock playhead alignment, safe pencil tap deletion, and sequential stem PCM.
+- Warm auditions send only the current sound settings before the queued project update. Opening a saved project prepares its fonts; playhead messages are aligned to the browser's output clock when available. These reduce app-side waiting and visual lead; physical iPhone output latency remains unverified.
+- Pencil-mode note taps delete on release and Undo restores them. Resize, drag, cancelled touch, pinch and long-press selection do not delete a note. Eraser swipe deletion remains available.
+- Export → Stems renders audible, non-empty channels in rack order into one stereo WAV. Initial rests, tuning, envelopes and delay tails are retained. Equal whole-bar slots are extended if tails need more room, with one full bar of silence between slots; no trailing gap is added. PCM tests compare every stem against a standalone render, check the silent gaps and verify no cross-channel tail leakage.
+- Browser verification on an isolated local origin: added two channels, tapped a note to delete it, restored it with Undo, started/stopped playback and exported Stems. The native media player decoded the 6.450567-second WAV with readyState 4 and no error, then played to the end. No browser warnings or errors were recorded. Existing projects on other origins were not changed.
+
+## Earlier revisions
+
 - Added GS Wavetable Synth (235 presets), Mario Party DS (78), and PW AA (187). Touhou is excluded at the user's request. All 16 bundled banks and 2,475 preset records match their shipped SF2 files; 99 automated checks pass, including actual-engine playback for each new bank. SoundFont downloads and offline reuse retain the existing loader. App cache version is v9.
 
 - Ruler taps now start playback at the snapped tick, including horizontal scroll offset. Ruler drags, pinches and cancelled touches never seek. Go to start resets the viewport and playhead, continuing playback only when already running.

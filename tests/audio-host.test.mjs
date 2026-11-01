@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {AudioHost} from '../site/audio.js';import {newProject,channel} from '../site/model.js';
+import {AudioHost} from '../site/audio.js';import {newProject,channel,note} from '../site/model.js';
 test('rapid edits coalesce to one latest audio update and preview flush is immediate',t=>{
  t.mock.timers.enable({apis:['setTimeout']});const host=new AudioHost(new Map(),()=>{}),messages=[];host.node={port:{postMessage:m=>messages.push(structuredClone(m))}};
  const p=newProject();for(let i=0;i<100;i++){p.bpm=100+i;host.update(p);}assert.equal(messages.length,0);t.mock.timers.tick(32);assert.equal(messages.length,1);assert.equal(messages[0].project.bpm,199);
@@ -34,6 +34,14 @@ test('warm preview is dispatched synchronously without waiting for unrelated cha
  assert.ok(messages.some(m=>m.type==='previewOn'&&m.id==='touch'),'no asynchronous work before a warm note');
  assert.ok(!messages.some(m=>m.type==='load'));
  await finished;
+});
+test('preview reaches the engine before a large pending MIDI update with current sound settings',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});
+ const {host,project,messages}=readyHost();host.loaded.add('one');host.signatures.set('one','*');
+ project.channels[0].notes=Array.from({length:2000},(_,i)=>note(60,i*20,120));project.channels[0].cents=24;project.pitch={note:2,cents:13};
+ host.update(project);await host.preview(project,0,67,'touch');
+ assert.equal(messages.length,1);assert.equal(messages[0].type,'previewOn');assert.equal(messages[0].sound.cents,24);assert.equal(messages[0].sound.notes,undefined);assert.deepEqual(messages[0].masterPitch,project.pitch);
+ t.mock.timers.tick(32);assert.equal(messages[1].type,'project');assert.equal(messages[1].project.channels[0].notes.length,2000);
 });
 test('cold preview loads only its bank; full transport preparation still loads every channel',async()=>{
  const reads=[],{host,project,messages}=readyHost(async id=>{reads.push(id);return new Blob(['samples']);});

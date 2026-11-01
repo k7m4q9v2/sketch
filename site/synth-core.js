@@ -10,7 +10,9 @@ export class LumaEngine{
  pitchOf(handle){return this.api.note_pitch(handle);}
  slide(handle,pitch,frames){this.api.slide_note(handle,pitch,frames);}
  panic(channel=-1){this.api.panic(channel);}
- configure(p){this.api.set_pitch((p.pitch?.note??0)+(p.pitch?.cents??0)/100);p.channels.forEach((c,i)=>{const e=c.adsr;this.api.tune_channel(i,c.cents??0);this.api.configure(i,this.fonts.get(c.fontId)??-1,c.bank,c.program,c.volume,c.pan,e.a,e.d,e.s,e.r,e.enabled?1:0,e.delay??0,e.hold??0,e.curveA??0,e.curveD??0,e.curveR??0,e.tempo?p.bpm/120:1);});}
+ configureChannel(c,i,bpm){const e=c.adsr;this.api.tune_channel(i,c.cents??0);this.api.configure(i,this.fonts.get(c.fontId)??-1,c.bank,c.program,c.volume,c.pan,e.a,e.d,e.s,e.r,e.enabled?1:0,e.delay??0,e.hold??0,e.curveA??0,e.curveD??0,e.curveR??0,e.tempo?bpm/120:1);}
+ configure(p){this.api.set_pitch((p.pitch?.note??0)+(p.pitch?.cents??0)/100);p.channels.forEach((c,i)=>this.configureChannel(c,i,p.bpm));}
+ configurePreview(channel,sound,pitch,bpm){this.api.set_pitch((pitch?.note??0)+(pitch?.cents??0)/100);this.configureChannel(sound,channel,bpm);}
  render(n){const ptr=this.api.render(n);const audio=new Float32Array(this.api.memory.buffer,ptr,n*2);return audio;}
 }
 export class Sequencer{

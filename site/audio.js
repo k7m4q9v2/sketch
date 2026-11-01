@@ -1,4 +1,5 @@
 import {subsetFont,requiredPresets} from './sf2-subset.js';
+import {audiblePosition} from './audio-timing.js';
 const deadline=(promise,ms,message)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error(message)),ms);Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});});
 export class AudioHost extends EventTarget{
  constructor(fonts,getBlob){super();Object.assign(this,{fonts,getBlob});this.loading=new Map();this.pending=new Map();this.loaded=new Set();this.signatures=new Map();this.previewTokens=new Map();this.serial=0;this.generation=0;this.ready=false;}
@@ -23,14 +24,14 @@ export class AudioHost extends EventTarget{
   const required=new Set(project.channels.map(c=>c.fontId));for(const id of this.loaded)if(!required.has(id)){await this.request('unload',{fontId:id});this.loaded.delete(id);}
   const channels=previewChannel===null?project.channels:[project.channels[previewChannel]].filter(Boolean);
   for(const c of channels){await this.load(c.fontId,requiredPresets(project,c.fontId));}
-  if(generation!==this.generation)throw Error('Audio session changed. Tap Play again.');this.update(project,true);
+  if(generation!==this.generation)throw Error('Audio session changed. Tap Play again.');this.update(project,previewChannel===null);
  }
  async initialize(){
   const ctx=this.context,generation=this.generation;if(!ctx.audioWorklet)throw Error('AudioWorklet is unavailable. Use Safari over HTTPS.');
   const response=await fetch('./lumafont.wasm');if(!response.ok)throw Error('Could not load the sound engine.');const module=await WebAssembly.compile(await response.arrayBuffer());await ctx.audioWorklet.addModule('./audio-worklet.js');
   if(generation!==this.generation)throw Error('Audio session changed.');
   const node=this.node=new AudioWorkletNode(ctx,'lumafont',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]});
-  node.port.onmessage=({data})=>{if(data.requestId){const p=this.pending.get(data.requestId);if(p){clearTimeout(p.timer);this.pending.delete(data.requestId);data.error?p.reject(Error(data.error)):p.resolve(data.result);}}else this.dispatchEvent(new CustomEvent(data.error?'error':'position',{detail:data}));};
+  node.port.onmessage=({data})=>{if(data.requestId){const p=this.pending.get(data.requestId);if(p){clearTimeout(p.timer);this.pending.delete(data.requestId);data.error?p.reject(Error(data.error)):p.resolve(data.result);}}else this.dispatchEvent(new CustomEvent(data.error?'error':'position',{detail:data.error?data:audiblePosition(ctx,data)}));};
   node.onprocessorerror=()=>{if(this.node!==node)return;this.broken=true;this.ready=false;this.dispatchEvent(new CustomEvent('error',{detail:{error:'Audio stopped. Tap Play to reconnect.'}}));};
   await this.request('init',{module});if(generation!==this.generation)throw Error('Audio session changed.');node.connect(ctx.destination);
  }
@@ -42,7 +43,9 @@ export class AudioHost extends EventTarget{
  async preview(project,channel,pitch,id,velocity=100){const c=project.channels[channel];if(!c)return;if(this.context?.state==='closed'||this.broken)this.reset();const token={channelId:c.id,fontId:c.fontId,bank:c.bank,program:c.program};this.previewTokens.set(id,token);
   try{if(!(this.ready&&!this.broken&&this.context?.state==='running'&&this.hasLoaded(c.fontId,requiredPresets(project,c.fontId))))await this.ensure(project,channel);
    if(this.previewTokens.get(id)!==token)return;const now=project.channels[channel];if(!now||now.id!==token.channelId||now.fontId!==token.fontId||now.bank!==token.bank||now.program!==token.program){this.previewTokens.delete(id);return;}
-   this.update(project,true);this.send('previewOn',{channel,pitch,id,velocity});
+   // A touch needs only this channel's sound, not a rebuild of the MIDI timeline.
+   const {notes,...sound}=now;
+   this.send('previewOn',{channel,pitch,id,velocity,sound,masterPitch:project.pitch,bpm:project.bpm,delay:project.delay});this.update(project);
   }catch(error){this.previewTokens.delete(id);throw error;}
  }
  off(id){this.previewTokens.delete(id);this.send('previewOff',{id});}

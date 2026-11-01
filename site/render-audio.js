@@ -4,9 +4,32 @@ import {activeChannels,PPQ} from './model.js';
 import {wavHeader} from './export.js';
 
 // Render to the last audible sample, retaining initial rests and release/echo tails.
-export async function renderAudio({project,fonts=[],tail=true},wasm,progress=()=>{}){
+export async function renderAudio({project,fonts=[],tail=true,mode='mix'},wasm,progress=()=>{}){
+ if(!['mix','stems'].includes(mode))throw Error('Unknown audio export format.');
  const rate=44100,engine=await LumaEngine.create(wasm,rate);
- for(const f of fonts)engine.load(f.id,f.buffer??await(await subsetFont(f.blob,requiredPresets(project,f.id))).arrayBuffer());
+ const audible=activeChannels(project),required=new Set(audible.map(c=>c.fontId));
+ for(const f of fonts)if(required.has(f.id))engine.load(f.id,f.buffer??await(await subsetFont(f.blob,requiredPresets({...project,channels:audible},f.id))).arrayBuffer());
+ if(mode==='mix')return renderPass(project,engine,rate,tail,progress);
+ const channels=audible.filter(c=>c.notes.some(n=>!n.slide&&n.start<project.bars*4*PPQ));
+ if(!channels.length)throw Error('Add notes before exporting stems.');
+ const results=[];let bytes=0;
+ for(const [index,c]of channels.entries()){
+  const result=renderPass({...project,channels:[{...c,mute:false,solo:false}]},engine,rate,tail,value=>progress((index+value)/channels.length));
+  results.push({...result,name:c.name,id:c.id});bytes+=result.buffer.byteLength;
+  if(bytes>256*1024*1024)throw Error('Stem export is too long. Shorten the loop or export fewer channels.');
+  progress((index+1)/channels.length);
+ }
+ const barFrames=rate*240/project.bpm;
+ const spacingBars=Math.max(project.bars,...results.map(r=>Math.ceil((r.buffer.byteLength-44)/4/barFrames)));
+ const stems=results.map((r,i)=>({id:r.id,name:r.name,startFrame:Math.round(i*(spacingBars+1)*barFrames),frames:(r.buffer.byteLength-44)/4}));
+ const frames=stems.at(-1).startFrame+stems.at(-1).frames;
+ if(frames*4>256*1024*1024)throw Error('Stem export is too long. Shorten the loop or export fewer channels.');
+ const buffer=wavHeader(frames,rate),pcm=new Uint8Array(buffer);
+ results.forEach((r,i)=>pcm.set(new Uint8Array(r.buffer,44),44+stems[i].startFrame*4));
+ return {buffer,stems,spacingBars,gapBars:1,peak:Math.max(...results.map(r=>r.peak)),clipped:results.reduce((n,r)=>n+r.clipped,0),tailLimited:results.some(r=>r.tailLimited)};
+}
+
+function renderPass(project,engine,rate,tail,progress){
  const p=structuredClone(project);p.metronome=false;
  const seq=new Sequencer(engine,rate);seq.setProject(p);seq.start();
  const loopEnd=p.bars*4*PPQ;

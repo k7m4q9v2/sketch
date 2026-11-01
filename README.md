@@ -46,6 +46,12 @@ npm test
 
 初回にアプリ本体と音源一覧だけをオフラインキャッシュします。SoundFont本体は選択・再生に必要になったものだけをダウンロードしてIndexedDBに保存します。同時に同じ音源を使っても取得は一回だけです。次回起動時は保存済みのBlobを利用し、再ダウンロードも全ファイルの再検証も行いません。端末のサイトデータを消した場合には再取得が必要です。
 
+鉛筆モードでは空白をタップすると追加、ノート本体をタップすると削除します。ドラッグ、長押し選択、右端の長さ変更では削除しません。削除はUndoで戻せます。消しゴムでは従来通りなぞって削除できます。
+
+Export → Stemsは、発音するチャンネルをラック順に1本のステレオWAVへ並べます。各チャンネルの先頭の休符、音量、パン、ピッチ、エンベロープ、ディレイを保持し、同じ小節幅の区間の間に1小節の無音を入れます。余韻がループ長を超える場合は区間を小節単位で延長し、最後は最終ステムの余韻まで書き出します。Mute/Soloを反映し、空のチャンネルは省きます。通常のAudio書き出しはミックスのままです。
+
+試聴は音色設定だけを音源へ先に送信し、MIDI全体の更新を待ちません。プロジェクトを開くと使用する音源を準備します。再生バーはWeb Audioの出力時刻（非対応環境では報告された遅延値）に合わせます。実機の出力遅延・録画性能は端末とブラウザにも依存します。
+
 標準音源は16個、計2,475音色です。GeneralUser GSに加え、Pokemon HGSS / DPPt / Black and White 2 / Emerald、Mother 3 / 1+2、New Super Mario Bros DS、Lil'Sness、GenesiSF、KEYGEN、SNES、gm、GS Wavetable Synth、Mario Party DS、PW AAを同梱しています。GeneralUser GS以外の音源容量は約171MiBです。`site/bundled-fonts.js` と `site/additional-fonts.js` が一覧・音色・ファイルの識別情報を持ちます。
 
 GeneralUser GSはMicrosoft GS Wavetableそのものではありません。GeneralUser GSのライセンスは `site/GeneralUser-LICENSE.txt`、音源エンジンの表示は `site/THIRD_PARTY_NOTICES.txt` を参照してください。
