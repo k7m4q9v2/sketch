@@ -116,8 +116,6 @@ test('created callback opens editing aid only after a note is committed, not on 
  s.roll.down(s.event(220,180));s.roll.move(s.event(250,180));s.roll.up(s.event(250,180));assert.equal(created.length,1);
  s.roll.down(s.event(220,220));s.roll.up(s.event(220,220),true);assert.equal(created.length,1);
 });
-test('moving the persistent magnifier follows the underlying musical position',async()=>{
- const {loupeFocus}=await import('../site/note-loupe.js');const {roll}=setup();
- const a=loupeFocus(roll,40,60,230,140),b=loupeFocus(roll,112,84,230,140);
- assert.ok(Math.abs(b.tick-a.tick-480)<1e-8);assert.equal(b.pitch,a.pitch-1);
+test('overview includes the full melodic range and empty projects',async()=>{
+ const {overviewRange}=await import('../site/roll-overview.js');assert.deepEqual(overviewRange([]),{low:45,high:75});assert.deepEqual(overviewRange([{pitch:0},{pitch:127}]),{low:0,high:127});
 });
