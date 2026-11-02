@@ -22,9 +22,19 @@ test('scroll and pinch cancel selection timer without adding or deleting notes',
 test('eraser sweep deletes every crossed note with one undo checkpoint',()=>{const s=setup();s.roll.channel.notes=[note(70,0,120),note(70,480,120),note(70,960,120),note(60,0,120)];s.roll.mode='erase';s.roll.down(s.event(40,82));s.roll.move(s.event(220,82));s.roll.up(s.event(220,82));assert.equal(s.roll.channel.notes.length,1);assert.equal(s.roll.channel.notes[0].pitch,60);assert.equal(s.checkpoints,1);assert.equal(s.changes,1);});
 test('FL snap entries have step/beat/triplet values; Line rounds and Cell floors with zoom',()=>{assert.equal(SNAP_CHOICES.length,14);assert.equal(snapTicks('step6',72),20);assert.equal(snapTicks('beat6',72),80);assert.equal(snapTicks('beat3',72),160);assert.equal(snapTicks('bar',72),1920);assert.equal(snapPosition(100,'line',72),120);assert.equal(snapPosition(100,'cell',72),0);assert.equal(snapPosition(101.4,'none',72),101);assert.equal(gridTicks(180),60);assert.equal(gridTicks(25),480);});
 
-test('horizontal pinch expands time independently and supports a wider zoom range',()=>{
- const s=setup(),row=s.roll.row;s.roll.down(s.event(100,100));s.roll.down(s.event(150,100,2));s.roll.move(s.event(350,100,2));assert.equal(s.roll.gesture.axis,'x');assert.equal(s.roll.row,row);assert.equal(s.roll.beatWidth,360);
- s.roll.zoom(10);assert.equal(s.roll.beatWidth,720);s.roll.zoom(.001);assert.equal(s.roll.beatWidth,12);s.roll.up(s.event(100,100));s.roll.up(s.event(350,100,2));assert.equal(s.roll.channel.notes.length,0);
+test('pinch preserves shape and its initial musical anchor despite finger drift',()=>{
+ const s=setup(),r=s.roll;r.x=200;const before=r.musical({x:150,y:100});
+ r.down(s.event(100,100));r.down(s.event(200,100,2));r.move(s.event(250,100,2));
+ assert.equal(r.beatWidth,108);assert.equal(r.row,36);assert.equal(r.beatWidth/r.row,3);
+ const after=r.musical({x:150,y:100});assert.ok(Math.abs(before.tick-after.tick)<1e-8);assert.equal(before.pitch,after.pitch);
+ r.move(s.event(100,140));r.move(s.event(250,140,2));assert.equal(r.beatWidth,108);assert.equal(r.row,36);assert.ok(Math.abs(r.musical({x:150,y:100}).tick-before.tick)<1e-8);
+ r.up(s.event(100,140));r.up(s.event(250,140,2));assert.equal(r.channel.notes.length,0);
+});
+test('small pinch jitter is ignored and scale limits preserve aspect ratio',()=>{
+ const s=setup(),r=s.roll;r.down(s.event(100,100));r.down(s.event(200,100,2));r.move(s.event(202,100,2));assert.equal(r.beatWidth,72);assert.equal(r.row,24);
+ r.move(s.event(800,100,2));assert.equal(r.row,64);assert.equal(r.beatWidth/r.row,3);
+ r.move(s.event(105,100,2));assert.equal(r.row,18);assert.equal(r.beatWidth/r.row,3);
+ r.up(s.event(100,100));r.up(s.event(105,100,2));
 });
 
 test('horizontal moves and resizing stay silent, while pitch changes audition',()=>{
