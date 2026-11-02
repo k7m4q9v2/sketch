@@ -110,3 +110,12 @@ test('group movement at loop end preserves spacing and only trims overflowing du
  const s=setup();s.project.bars=1;const a=note(70,480,240),b=note(68,960,720);s.roll.channel.notes=[a,b];s.roll.selection=new Set([a.id,b.id]);s.roll.selected=a.id;const r=s.roll.rect(a),x=r.x+4,y=r.y+5;
  s.roll.down(s.event(x,y));s.roll.move(s.event(x+126,y));s.roll.up(s.event(x+126,y));assert.equal(b.start-a.start,480);assert.equal(a.duration,240);assert.equal(b.duration,120);assert.equal(b.start+b.duration,1920);
 });
+
+test('created callback opens editing aid only after a note is committed, not on drag/cancel',()=>{
+ const s=setup(),created=[];s.roll.callbacks.created=n=>created.push(n);s.roll.down(s.event(60,85));assert.equal(created.length,0);s.roll.up(s.event(60,85));assert.equal(created[0],s.roll.channel.notes[0]);
+ s.roll.down(s.event(220,180));s.roll.move(s.event(250,180));s.roll.up(s.event(250,180));assert.equal(created.length,1);
+ s.roll.down(s.event(220,220));s.roll.up(s.event(220,220),true);assert.equal(created.length,1);
+});
+test('magnifier is automatic only for zoomed-out or narrow notes',async()=>{
+ const {needsNoteLoupe}=await import('../site/note-loupe.js');const s=setup(),n=note(70,0,480);assert.equal(needsNoteLoupe(s.roll,n),false);s.roll.beatWidth=24;assert.equal(needsNoteLoupe(s.roll,n),true);s.roll.beatWidth=72;n.duration=120;assert.equal(needsNoteLoupe(s.roll,n),true);
+});

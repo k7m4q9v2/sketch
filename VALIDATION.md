@@ -85,3 +85,6 @@ Horizontal bounds include half a viewport of trailing workspace (minimum 80px). 
 
 ## 2026-11-02 — SF2 header navigation, Effects tab and transport fit
 Replaced Instruments heading and duplicate SF2 card with a filename button. Header toggles SF2 list; selecting a font returns to its presets. Added Instruments/Effects tabs; removed Back-based effects discovery and duplicate font row. Outside pointer down/up dismisses the drawer without dismissing on transport taps or inside drags. Transport spacing, safe-area reservation and visual viewport position updates keep controls within narrow/short screens. Browser verified font selection, outside dismissal, Effects and 390x700/320x568 layouts. All transport buttons stay within bounds; no console errors. 124 tests and static checks pass.
+
+## 2026-11-02 — Automatic note editing loupe
+Committed note creation opens an interactive local piano-roll loupe when beat width is below 48px or the note is narrower than 26px. Reuses PianoRoll editing, shared MIDI, history and audio callbacks while keeping the main viewport unchanged. Done/outside dismisses and cleans observers, long press timers and previews. Browser verified automatic opening, resizing, pitch dragging and return to unchanged main zoom at 390x700 without console errors. 126 tests and static checks pass. Physical iPhone touch behavior remains unverified.
