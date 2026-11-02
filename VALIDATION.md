@@ -79,3 +79,6 @@ Pencil taps on a note body delete even when the body overlaps its resize zone. D
 
 ## 2026-11-02 — Current SF2 above instruments
 Added a persistent, wrapping SF2 filename header above instrument search/list. Tapping opens the existing SoundFont picker. Verified GeneralUser GS.sf2 heading and picker navigation at 390x844. Static checks and 121 tests pass.
+
+## 2026-11-02 — Loop-end editing room
+Horizontal bounds include half a viewport of trailing workspace (minimum 80px). Moving notes/groups to the final snap cell trims only overhanging durations instead of blocking the movement. Dragging back restores original durations within that gesture; one undo checkpoint remains. Extra workspace taps pan without adding notes. Existing resize caps and loop length remain unchanged. 124 tests and static checks pass, including final-cell movement, group spacing, restore-on-drag-back and trailing-space taps.

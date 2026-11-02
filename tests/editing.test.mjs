@@ -95,3 +95,18 @@ test('zoomed-out note taps delete even in resize region, while edge drags resize
   r=s.roll.rect(n);s.roll.down(s.event(r.x+r.w-1,y));s.roll.move(s.event(r.x+r.w-13,y));s.roll.up(s.event(r.x+r.w-13,y));assert.equal(s.roll.channel.notes.length,1);
  }
 });
+
+test('moving into the last grid cell trims the overhang and restores length when dragged back',()=>{
+ const s=setup();s.project.bars=1;const n=note(70,960,480);s.roll.channel.notes=[n];const r=s.roll.rect(n),x=r.x+5,y=r.y+5;
+ s.roll.down(s.event(x,y));s.roll.move(s.event(x+126,y));assert.equal(n.start,1800);assert.equal(n.duration,120);assert.equal(s.project.bars,1);
+ s.roll.move(s.event(x,y));assert.equal(n.start,960);assert.equal(n.duration,480);
+ s.roll.move(s.event(x+126,y));s.roll.up(s.event(x+126,y));assert.equal(n.start+n.duration,1920);assert.equal(s.checkpoints,1);assert.equal(s.changes,1);
+});
+test('loop end can scroll into the viewport; tapping the extra space does not create notes',()=>{
+ const s=setup();s.project.bars=4;s.roll.x=99999;s.roll.bounds();const endX=s.roll.keyWidth+16*s.roll.beatWidth-s.roll.x;assert.ok(endX<300&&endX>100);
+ s.roll.down(s.event(endX+60,85));s.roll.up(s.event(endX+60,85));assert.equal(s.roll.channel.notes.length,0);assert.equal(s.checkpoints,0);assert.equal(s.project.bars,4);
+});
+test('group movement at loop end preserves spacing and only trims overflowing durations',()=>{
+ const s=setup();s.project.bars=1;const a=note(70,480,240),b=note(68,960,720);s.roll.channel.notes=[a,b];s.roll.selection=new Set([a.id,b.id]);s.roll.selected=a.id;const r=s.roll.rect(a),x=r.x+4,y=r.y+5;
+ s.roll.down(s.event(x,y));s.roll.move(s.event(x+126,y));s.roll.up(s.event(x+126,y));assert.equal(b.start-a.start,480);assert.equal(a.duration,240);assert.equal(b.duration,120);assert.equal(b.start+b.duration,1920);
+});
