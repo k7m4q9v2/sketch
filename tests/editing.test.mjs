@@ -178,3 +178,15 @@ test('dragging or pinching from the margins cancels long-press selection',()=>{
   assert.equal(r.channel.notes.length,0);
  }
 });
+
+test('paste right preserves the short final rest up to the next beat and repeats without drift',()=>{
+ const s=setup(),r=s.roll;s.project.bars=2;
+ r.channel.notes=Array.from({length:16},(_,i)=>note(57,i*120,90));r.selection=new Set(r.channel.notes.map(n=>n.id));
+ r.pasteRight();assert.equal(r.selectedNotes[0].start,1920);assert.equal(r.selectedNotes.at(-1).start,3720);assert.ok(r.selectedNotes.every(n=>n.duration===90));
+ r.pasteRight();assert.equal(r.selectedNotes[0].start,3840);
+});
+test('paste right pads only to a beat, not a whole bar, and preserves a box leading rest',()=>{
+ const s=setup(),r=s.roll;r.channel.notes=[note(60,240,90),note(62,360,90)];r.selection=new Set(r.channel.notes.map(n=>n.id));r.selectionSpan={start:0,end:450};
+ r.pasteRight();assert.deepEqual(r.selectedNotes.map(n=>n.start),[720,840]);
+ r.pasteRight();assert.deepEqual(r.selectedNotes.map(n=>n.start),[1200,1320]);
+});
