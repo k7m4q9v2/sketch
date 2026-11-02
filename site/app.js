@@ -16,7 +16,7 @@ import {PlaybackPoint} from './playback-point.js';
 import {bindAudioLifecycle} from './audio-lifecycle.js';
 import {inspectWav,wavFile} from './wav-file.js';
 import {PianoRoll,pitchName} from './piano-roll.js';
-import {midiBytes} from './export.js';
+import {midiZipBytes} from './export.js';
 import {activeChannels} from './model.js';
 import * as storage from './storage.js';
 // Keep touch-triggered dialog autofocus from drawing a keyboard focus ring.
@@ -177,7 +177,7 @@ document.addEventListener('dragleave',e=>{if(!e.relatedTarget||!$('player-browse
 document.addEventListener('drop',e=>{if(![...e.dataTransfer.types].includes('Files'))return;e.preventDefault();$('player-browser').classList.remove('drag-over');const files=droppedSoundFonts(e.dataTransfer);files.then(importFonts).catch(error=>toast(error.message,true));});
 function download(blob,name,body){const file=blob instanceof File?blob:new File([blob],name,{type:blob.type}),url=URL.createObjectURL(file);objectUrls.push(url);const a=document.createElement('a');a.href=url;a.download=file.name;a.textContent='Save file';a.onclick=()=>exportPreview?.pause();if(body){const result=document.createElement('div');result.className='export-result';if(canShareFile(file)){const button=document.createElement('button');button.className='share-file-button';button.textContent='Export';button.onclick=async()=>{button.disabled=true;try{exportPreview?.pause();stop();await shareFile(file);}catch(e){toast('Could not open sharing. Use Save file.',true);}finally{button.disabled=false;}};result.append(button);}result.append(a);body.append(result);}return {url,a};}
 const safeName=()=>project.name.replace(/[\\/:*?"<>|]/g,'_').slice(0,70)||'Sketch';
-function showExport(){if(!project.channels.length)return;const b=dialog('Export');action(b,'Audio','WAV',()=>renderWav(true));action(b,'Stems','',()=>renderWav(true,'stems'));action(b,'MIDI','.mid',()=>{const body=dialog('MIDI');download(new Blob([midiBytes(project)],{type:'audio/midi'}),safeName()+'.mid',body);});}
+function showExport(){if(!project.channels.length)return;const b=dialog('Export');action(b,'Audio','WAV',()=>renderWav(true));action(b,'Stems','',()=>renderWav(true,'stems'));action(b,'MIDI','.zip',()=>{try{const bytes=midiZipBytes(project),body=dialog('MIDI');download(new Blob([bytes],{type:'application/zip'}),safeName()+'.zip',body);}catch(error){toast(error.message);}});}
 on('export-btn','click',showExport);
 async function renderWav(tail,mode='mix'){
  const token=++exportRun,snapshot=clone(project),filename=safeName()+'.wav',ids=[...new Set(activeChannels(snapshot).map(c=>c.fontId))];stop();

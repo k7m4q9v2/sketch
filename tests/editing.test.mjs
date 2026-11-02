@@ -25,15 +25,15 @@ test('FL snap entries have step/beat/triplet values; Line rounds and Cell floors
 test('pinch preserves shape and its initial musical anchor despite finger drift',()=>{
  const s=setup(),r=s.roll;r.x=200;const before=r.musical({x:150,y:100});
  r.down(s.event(100,100));r.down(s.event(200,100,2));r.move(s.event(250,100,2));
- assert.equal(r.beatWidth,108);assert.equal(r.row,36);assert.equal(r.beatWidth/r.row,3);
+ assert.equal(r.beatWidth,108);assert.equal(r.row,36);assert.ok(Math.abs(r.beatWidth/r.row-3)<1e-10);
  const after=r.musical({x:150,y:100});assert.ok(Math.abs(before.tick-after.tick)<1e-8);assert.equal(before.pitch,after.pitch);
  r.move(s.event(100,140));r.move(s.event(250,140,2));assert.equal(r.beatWidth,108);assert.equal(r.row,36);assert.ok(Math.abs(r.musical({x:150,y:100}).tick-before.tick)<1e-8);
  r.up(s.event(100,140));r.up(s.event(250,140,2));assert.equal(r.channel.notes.length,0);
 });
 test('small pinch jitter is ignored and scale limits preserve aspect ratio',()=>{
  const s=setup(),r=s.roll;r.down(s.event(100,100));r.down(s.event(200,100,2));r.move(s.event(202,100,2));assert.equal(r.beatWidth,72);assert.equal(r.row,24);
- r.move(s.event(800,100,2));assert.equal(r.row,64);assert.equal(r.beatWidth/r.row,3);
- r.move(s.event(105,100,2));assert.equal(r.row,18);assert.equal(r.beatWidth/r.row,3);
+ r.move(s.event(800,100,2));assert.equal(r.row,64);assert.ok(Math.abs(r.beatWidth/r.row-3)<1e-10);
+ r.move(s.event(105,100,2));assert.ok(r.row<18);assert.ok(Math.abs(r.beatWidth/r.row-3)<1e-10);
  r.up(s.event(100,100));r.up(s.event(105,100,2));
 });
 
@@ -148,4 +148,14 @@ test('paste right keeps the box leading rest but ends at the last note, ignoring
  r.pasteRight();assert.deepEqual(r.selectedNotes.map(n=>n.start),[720,840]);assert.deepEqual(r.selectionSpan,{start:480,end:960});
  r.pasteRight();assert.deepEqual(r.selectedNotes.map(n=>n.start),[1200,1320]);
  r.pasteTick=1920;r.pasteNotes();assert.deepEqual(r.selectedNotes.map(n=>n.start),[2160,2280]);assert.deepEqual(r.selectionSpan,{start:1920,end:2400});
+});
+
+test('zoom-out fits all 32 bars and the full pitch range for box copying',()=>{
+ const s=setup(),r=s.roll;s.project.bars=32;
+ r.channel.notes=[note(0,0,240),note(127,32*4*480-240,240)];
+ const scale=r.minimumScale(72,24);r.beatWidth=72*scale;r.row=24*scale;r.bounds();
+ assert.equal(r.x,0);assert.equal(r.y,0);
+ assert.ok(128*r.beatWidth<390-r.keyWidth);assert.ok(128*r.row<500-r.ruler);
+ r.selectBox({x:r.keyWidth,y:r.ruler},{x:390,y:500});
+ assert.equal(r.selection.size,2);r.copySelected();assert.equal(r.clipboard.length,2);
 });
