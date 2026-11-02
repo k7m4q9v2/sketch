@@ -159,3 +159,22 @@ test('zoom-out fits all 32 bars and the full pitch range for box copying',()=>{
  r.selectBox({x:r.keyWidth,y:r.ruler},{x:390,y:500});
  assert.equal(r.selection.size,2);r.copySelected();assert.equal(r.clipboard.length,2);
 });
+
+test('long press from pitch margin, ruler and loop-end space starts a silent selection box',()=>{
+ for(const [x,y] of [[10,80],[60,10],[10,10],[380,80]]){
+  const s=setup(),r=s.roll;s.project.bars=1;r.beatWidth=60;
+  let previews=0,seeks=0;r.callbacks.preview=()=>previews++;r.callbacks.seek=()=>seeks++;
+  r.channel.notes=[note(70,0,480)];
+  r.down(s.event(x,y));r.beginBox();assert.equal(r.gesture.type,'box');
+  r.move(s.event(x<100?300:34,300));r.up(s.event(x<100?300:34,300));
+  assert.equal(r.channel.notes.length,1);assert.equal(r.selection.size,1);assert.equal(previews,0);assert.equal(seeks,0);
+ }
+});
+test('dragging or pinching from the margins cancels long-press selection',()=>{
+ for(const [x,y] of [[10,80],[60,10],[380,80]]){
+  const s=setup(),r=s.roll;s.project.bars=1;r.beatWidth=60;
+  r.down(s.event(x,y));r.move(s.event(x+20,y+20));r.beginBox();assert.equal(r.gesture.type,'pan');r.up(s.event(x+20,y+20));
+  r.down(s.event(x,y));r.down(s.event(200,200,2));r.beginBox();assert.equal(r.gesture.type,'pinch');r.up(s.event(x,y));r.up(s.event(200,200,2));
+  assert.equal(r.channel.notes.length,0);
+ }
+});
