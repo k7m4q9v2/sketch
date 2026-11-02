@@ -117,12 +117,16 @@ test('created callback opens editing aid only after a note is committed, not on 
  s.roll.down(s.event(220,220));s.roll.up(s.event(220,220),true);assert.equal(created.length,1);
 });
 test('magnifier is automatic only for zoomed-out or narrow notes',async()=>{
- const {needsNoteZoom}=await import('../site/note-zoom.js');const s=setup(),n=note(70,0,480);assert.equal(needsNoteZoom(s.roll,n),false);s.roll.beatWidth=24;assert.equal(needsNoteZoom(s.roll,n),true);s.roll.beatWidth=72;n.duration=120;assert.equal(needsNoteZoom(s.roll,n),true);
+ const {needsNoteLoupe}=await import('../site/note-loupe.js');const s=setup(),n=note(70,0,480);assert.equal(needsNoteLoupe(s.roll,n),false);s.roll.beatWidth=24;assert.equal(needsNoteLoupe(s.roll,n),true);s.roll.beatWidth=72;n.duration=120;assert.equal(needsNoteLoupe(s.roll,n),true);
 });
 
-test('automatic working zoom keeps the new note anchored and stops at a modest scale',async()=>{
- const {zoomToNewNote}=await import('../site/note-zoom.js');const s=setup(),r=s.roll,n=note(70,1920,120);r.beatWidth=24;r.row=18;r.x=20;r.y=900;
- const before=r.rect(n);zoomToNewNote(r,n);const after=r.rect(n);
- assert.equal(r.beatWidth,96);assert.equal(r.row,24);assert.equal(after.x,before.x);assert.equal(after.y+r.row/2,before.y+18/2);
- n.duration=1;zoomToNewNote(r,n);assert.equal(r.beatWidth,96);
+test('loupe sits at the opposite vertical edge and outside taps continue normally',async()=>{
+ const {loupePosition,dismissLoupeOutside}=await import('../site/note-loupe.js');
+ const area={left:0,right:390,top:100,bottom:600},size={width:250,height:154};
+ assert.equal(loupePosition(area,{x:100,y:140,w:12,h:20},size).top,438);
+ assert.equal(loupePosition(area,{x:100,y:520,w:12,h:20},size).top,133);
+ let closed=0;const inside={},root={contains:target=>target===inside};
+ const event={target:{},preventDefault(){throw Error('must not swallow tap');},stopPropagation(){throw Error('must not swallow tap');}};
+ dismissLoupeOutside(root,()=>closed++,{target:inside});assert.equal(closed,0);
+ dismissLoupeOutside(root,()=>closed++,event);assert.equal(closed,1);
 });
