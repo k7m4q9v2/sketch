@@ -5,7 +5,7 @@ export function loupePosition(area,note,size){
  const top=area.top+25+8,bottom=area.bottom-size.height-8;
  return {left:clamp(note.x+note.w/2-size.width/2,area.left+8,Math.max(area.left+8,area.right-size.width-8)),top:note.y+note.h/2<(top+bottom+size.height)/2?Math.max(top,bottom):top};
 }
-export function dismissLoupeOutside(root,close,event){if(!root.contains(event.target))close();}
+export function dismissLoupeOutside(root,close,event){if(!root.contains(event.target)&&!event.target.closest?.('#play, #stop'))close();}
 export function openNoteLoupe(main,n){
  if(!needsNoteLoupe(main,n)||document.getElementById('note-loupe'))return;
  const project=main.project,channel=main.channel,panel=document.createElement('div');panel.id='note-loupe';panel.setAttribute('role','region');panel.setAttribute('aria-label','Magnified piano roll');

@@ -130,3 +130,11 @@ test('loupe sits at the opposite vertical edge and outside taps continue normall
  dismissLoupeOutside(root,()=>closed++,{target:inside});assert.equal(closed,0);
  dismissLoupeOutside(root,()=>closed++,event);assert.equal(closed,1);
 });
+
+test('play and stop, including their icons, keep the loupe open',async()=>{
+ const {dismissLoupeOutside}=await import('../site/note-loupe.js');let closed=0;
+ const root={contains:()=>false};
+ for(const control of ['play','stop'])dismissLoupeOutside(root,()=>closed++,{target:{closest:selector=>{assert.equal(selector,'#play, #stop');return {id:control};}}});
+ assert.equal(closed,0);
+ dismissLoupeOutside(root,()=>closed++,{target:{closest:()=>null}});assert.equal(closed,1);
+});
