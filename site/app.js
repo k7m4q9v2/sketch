@@ -66,7 +66,7 @@ function closeBrowser(){if($('sound-dialog').classList.contains('direct-instrume
 function openBrowser(mode){$('sound-dialog').classList.add('instrument-drawer');browserMode=mode;$('player').classList.add('browsing');$('player-browser').hidden=false;$('selector-back').hidden=false;$('selector-search').value='';$('player-title').textContent=mode==='fonts'?'SoundFonts':'Instruments';$('browser-import').hidden=mode!=='fonts';renderBrowser();}
 function renderBrowser(){
  const list=$('selector-list'),c=current(),query=$('selector-search').value.toLowerCase(),isFonts=browserMode==='fonts';list.replaceChildren();
- $('browser-import').hidden=!isFonts;
+ $('browser-import').hidden=!isFonts;$('browser-font').hidden=isFonts;$('browser-font-name').textContent=fonts.get(c.fontId)?.name||'Locate SoundFont';
  const entries=isFonts?[...fonts.values()]:fonts.get(c.fontId)?.presets||[];
  for(const item of entries){if(!item.name.toLowerCase().includes(query))continue;
   const row=document.createElement('div');row.className='font-list-row';const chosen=isFonts?item.id===c.fontId:item.bank===c.bank&&item.program===c.program;
@@ -79,7 +79,7 @@ function renderBrowser(){
  if(!list.children.length){const empty=document.createElement('p');empty.className='library-empty';empty.textContent='No sounds';list.append(empty);}
 }
 async function chooseFont(font){audio.unlock().catch(e=>toast(e.message,true));await ensureFontBlob(font.id);checkpoint();const c=current(),p=font.presets[0];c.fontId=font.id;c.bank=p.bank;c.program=p.program;c.presetName=p.name;c.name=p.name;auditionSelection();closeBrowser();changed();}
-on('font-picker','click',()=>openBrowser('fonts'));on('preset-picker','click',()=>openBrowser('presets'));on('selector-back','click',()=>{$('sound-dialog').classList.remove('direct-instruments');closeBrowser();requestAnimationFrame(renderEnvelope);});on('selector-search','input',()=>renderBrowser());
+on('browser-font','click',()=>openBrowser('fonts'));on('font-picker','click',()=>openBrowser('fonts'));on('preset-picker','click',()=>openBrowser('presets'));on('selector-back','click',()=>{$('sound-dialog').classList.remove('direct-instruments');closeBrowser();requestAnimationFrame(renderEnvelope);});on('selector-search','input',()=>renderBrowser());
 function nextPreset(step){const c=current(),presets=fonts.get(c.fontId)?.presets||[];if(!presets.length)return;const i=presets.findIndex(p=>p.bank===c.bank&&p.program===c.program);choosePreset(presets[(i+step+presets.length)%presets.length]);}
 on('preset-prev','click',()=>nextPreset(-1));on('preset-next','click',()=>nextPreset(1));
 function choosePreset(p){checkpoint();const c=current();const rename=c.name===c.presetName||c.name.startsWith('Channel ');c.bank=p.bank;c.program=p.program;c.presetName=p.name;if(rename)c.name=p.name;auditionSelection();closeBrowser();changed();}

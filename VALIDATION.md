@@ -76,3 +76,6 @@ User requested removing the drawing feature. Removed Melody lab UI, runtime modu
 
 ## 2026-11-02 — Small-note taps and instrument drawer
 Pencil taps on a note body delete even when the body overlaps its resize zone. Dragging the edge still resizes; taps outside the body, holds, pinches and cancelled gestures remain non-destructive. Tested at beat widths 12, 24 and 72. Instruments open as a right-hand drawer; selecting closes it and returns to the roll, Back retains access to sound controls. 121 tests and static checks pass. Browser confirmed selection/return and 390x844 drawer layout with no console errors.
+
+## 2026-11-02 — Current SF2 above instruments
+Added a persistent, wrapping SF2 filename header above instrument search/list. Tapping opens the existing SoundFont picker. Verified GeneralUser GS.sf2 heading and picker navigation at 390x844. Static checks and 121 tests pass.
