@@ -82,3 +82,6 @@ Added a persistent, wrapping SF2 filename header above instrument search/list. T
 
 ## 2026-11-02 — Loop-end editing room
 Horizontal bounds include half a viewport of trailing workspace (minimum 80px). Moving notes/groups to the final snap cell trims only overhanging durations instead of blocking the movement. Dragging back restores original durations within that gesture; one undo checkpoint remains. Extra workspace taps pan without adding notes. Existing resize caps and loop length remain unchanged. 124 tests and static checks pass, including final-cell movement, group spacing, restore-on-drag-back and trailing-space taps.
+
+## 2026-11-02 — SF2 header navigation, Effects tab and transport fit
+Replaced Instruments heading and duplicate SF2 card with a filename button. Header toggles SF2 list; selecting a font returns to its presets. Added Instruments/Effects tabs; removed Back-based effects discovery and duplicate font row. Outside pointer down/up dismisses the drawer without dismissing on transport taps or inside drags. Transport spacing, safe-area reservation and visual viewport position updates keep controls within narrow/short screens. Browser verified font selection, outside dismissal, Effects and 390x700/320x568 layouts. All transport buttons stay within bounds; no console errors. 124 tests and static checks pass.
