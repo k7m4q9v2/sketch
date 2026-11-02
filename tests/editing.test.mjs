@@ -119,3 +119,7 @@ test('created callback opens editing aid only after a note is committed, not on 
 test('overview includes the full melodic range and empty projects',async()=>{
  const {overviewRange}=await import('../site/roll-overview.js');assert.deepEqual(overviewRange([]),{low:45,high:75});assert.deepEqual(overviewRange([{pitch:0},{pitch:127}]),{low:0,high:127});
 });
+
+test('quick zoom doubles per upward 70px and reverses smoothly',async()=>{
+ const {zoomDragRatio}=await import('../site/quick-zoom.js');assert.equal(zoomDragRatio(-70),2);assert.equal(zoomDragRatio(70),.5);assert.equal(zoomDragRatio(0),1);assert.equal(zoomDragRatio(-140),4);
+});
