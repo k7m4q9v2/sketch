@@ -1,4 +1,4 @@
-import {openNoteLoupe} from './note-loupe.js';
+import {mountNoteLoupe} from './note-loupe.js';
 import {icon} from './icons.js';
 import {STANDARD_FONT} from './standard-font.js';
 import {BUNDLED_FONTS} from './bundled-fonts.js';
@@ -41,7 +41,7 @@ function setSelected(index,open=false){selected=clamp(index,0,project.channels.l
 async function preview(pitch,id,velocity=100){heldPreviews.add(id);try{await audio.preview(project,selected,pitch,id,velocity);if(!heldPreviews.has(id))audio.off(id);}catch(e){heldPreviews.delete(id);toast(e.message,true);}}
 function previewOff(id){heldPreviews.delete(id);audio.off(id);}
 const roll=new PianoRoll($('piano-roll'),{beforeChange:checkpoint,change:()=>changed(),liveChange:()=>audio.update(clone(project)),select:n=>{if(n)roll.velocity=n.velocity;renderEnvelope();$('octave-down').disabled=roll.selectedNotes.some(n=>n.pitch<12);$('octave-up').disabled=roll.selectedNotes.some(n=>n.pitch>115);},preview,previewOff,seek:tick=>startPlayback(playbackPoint.set(project,tick)).catch(e=>toast(e.message,true)),menu:(p,count)=>{$('paste-right').hidden=!count;$('octave-down').hidden=$('octave-up').hidden=count<2;$('octave-down').disabled=roll.selectedNotes.some(n=>n.pitch<12);$('octave-up').disabled=roll.selectedNotes.some(n=>n.pitch>115);$('copy-notes').hidden=!count;$('delete-note').hidden=!count;$('paste-notes').hidden=!roll.clipboard.length;$('delete-note').hidden=!count;$('toggle-slide').hidden=!count;$('toggle-slide').textContent=roll.selectedNotes.every(n=>n.slide)?'Normal notes':'Slide notes';$('delete-note').textContent=count>1?`Delete ${count} notes`:'Delete note';const menu=$('note-popover');menu.hidden=false;menu.style.left=clamp(p.x,6,Math.max(6,$('piano-container').clientWidth-menu.offsetWidth-6))+'px';menu.style.top=clamp(p.y,5,$('piano-container').clientHeight-menu.offsetHeight-6)+'px';menu.hidden=false;},hideMenu:()=>$('note-popover').hidden=true,zoom:z=>$('zoom-label').textContent=Math.round(z*100)+'%'});
-roll.callbacks.created=n=>queueMicrotask(()=>{if(current()?.notes.includes(n))openNoteLoupe(roll,n);});
+mountNoteLoupe(roll);
 // Safari's native selection loupe can survive pointer preventDefault alone.
 // Cancel native touch defaults on the canvas; Pointer Events still own editing/pinch.
 for(const type of ['touchstart','touchmove'])$('piano-roll').addEventListener(type,e=>{if(e.cancelable)e.preventDefault();},{passive:false});

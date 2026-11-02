@@ -116,25 +116,8 @@ test('created callback opens editing aid only after a note is committed, not on 
  s.roll.down(s.event(220,180));s.roll.move(s.event(250,180));s.roll.up(s.event(250,180));assert.equal(created.length,1);
  s.roll.down(s.event(220,220));s.roll.up(s.event(220,220),true);assert.equal(created.length,1);
 });
-test('magnifier is automatic only for zoomed-out or narrow notes',async()=>{
- const {needsNoteLoupe}=await import('../site/note-loupe.js');const s=setup(),n=note(70,0,480);assert.equal(needsNoteLoupe(s.roll,n),false);s.roll.beatWidth=24;assert.equal(needsNoteLoupe(s.roll,n),true);s.roll.beatWidth=72;n.duration=120;assert.equal(needsNoteLoupe(s.roll,n),true);
-});
-
-test('loupe sits at the opposite vertical edge and outside taps continue normally',async()=>{
- const {loupePosition,dismissLoupeOutside}=await import('../site/note-loupe.js');
- const area={left:0,right:390,top:100,bottom:600},size={width:250,height:154};
- assert.equal(loupePosition(area,{x:100,y:140,w:12,h:20},size).top,438);
- assert.equal(loupePosition(area,{x:100,y:520,w:12,h:20},size).top,133);
- let closed=0;const inside={},root={contains:target=>target===inside};
- const event={target:{},preventDefault(){throw Error('must not swallow tap');},stopPropagation(){throw Error('must not swallow tap');}};
- dismissLoupeOutside(root,()=>closed++,{target:inside});assert.equal(closed,0);
- dismissLoupeOutside(root,()=>closed++,event);assert.equal(closed,1);
-});
-
-test('play and stop, including their icons, keep the loupe open',async()=>{
- const {dismissLoupeOutside}=await import('../site/note-loupe.js');let closed=0;
- const root={contains:()=>false};
- for(const control of ['play','stop'])dismissLoupeOutside(root,()=>closed++,{target:{closest:selector=>{assert.equal(selector,'#play, #stop');return {id:control};}}});
- assert.equal(closed,0);
- dismissLoupeOutside(root,()=>closed++,{target:{closest:()=>null}});assert.equal(closed,1);
+test('moving the persistent magnifier follows the underlying musical position',async()=>{
+ const {loupeFocus}=await import('../site/note-loupe.js');const {roll}=setup();
+ const a=loupeFocus(roll,40,60,230,140),b=loupeFocus(roll,112,84,230,140);
+ assert.ok(Math.abs(b.tick-a.tick-480)<1e-8);assert.equal(b.pitch,a.pitch-1);
 });

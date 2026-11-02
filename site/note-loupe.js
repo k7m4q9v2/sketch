@@ -1,33 +1,35 @@
-import {PianoRoll,pitchName} from './piano-roll.js';
+import {PianoRoll} from './piano-roll.js';
 import {PPQ,clamp} from './model.js';
-export function needsNoteLoupe(roll,n){return roll.beatWidth<48||roll.rect(n).w<24;}
-export function loupePosition(area,note,size){
- const top=area.top+25+8,bottom=area.bottom-size.height-8;
- return {left:clamp(note.x+note.w/2-size.width/2,area.left+8,Math.max(area.left+8,area.right-size.width-8)),top:note.y+note.h/2<(top+bottom+size.height)/2?Math.max(top,bottom):top};
-}
-export function dismissLoupeOutside(root,close,event){if(!root.contains(event.target)&&!event.target.closest?.('#play, #stop'))close();}
-export function openNoteLoupe(main,n){
- if(!needsNoteLoupe(main,n)||document.getElementById('note-loupe'))return;
- const project=main.project,channel=main.channel,panel=document.createElement('div');panel.id='note-loupe';panel.setAttribute('role','region');panel.setAttribute('aria-label','Magnified piano roll');
- panel.innerHTML='<div class="loupe-heading"><strong>Note</strong><button type="button">Done</button></div><div class="loupe-canvas"><canvas tabindex="0" aria-label="Magnified notes"></canvas></div>';
- document.body.append(panel);const canvas=panel.querySelector('canvas'),title=panel.querySelector('strong'),held=new Set();let closed=false;
- const close=()=>{if(closed)return;closed=true;document.removeEventListener('pointerdown',outside,true);window.removeEventListener('resize',close);clearTimeout(lens.longPress);lens.cancelEdge();lens.resize.disconnect();for(const id of held)main.callbacks.previewOff(id);panel.remove();main.draw();};
- // Nonmodal: the original pointer event continues to the underlying control.
- const outside=e=>dismissLoupeOutside(panel,close,e);
+export function loupeFocus(main,left,top,width,height){return main.musical({x:left+width/2,y:top+height/2});}
+export function mountNoteLoupe(main){
+ const panel=document.createElement('div');panel.id='note-loupe';panel.setAttribute('role','region');panel.setAttribute('aria-label','Movable piano roll magnifier');
+ panel.innerHTML='<div class="loupe-heading" role="button" tabindex="0" aria-label="Move magnifier"><span aria-hidden="true">──</span></div><div class="loupe-canvas"><canvas tabindex="0" aria-label="Magnified notes"></canvas></div>';
+ main.canvas.parentElement.append(panel);const canvas=panel.querySelector('canvas'),handle=panel.querySelector('.loupe-heading');let left=45,top=45,drag=null,initialized=false;
  const lens=new PianoRoll(canvas,{
  beforeChange:()=>main.callbacks.beforeChange(),
- change:()=>{main.selection=new Set(lens.selection);main.selected=lens.selected;main.callbacks.change();lens.set(project,main.index);if(!channel.notes.some(v=>v.id===n.id))close();},
+ change:()=>{main.selection=new Set(lens.selection);main.selected=lens.selected;main.callbacks.change();},
  liveChange:()=>{main.callbacks.liveChange?.();main.draw();},
- select:note=>{title.textContent=note?pitchName(note.pitch):'Note';},
- preview:(pitch,id)=>{held.add(id);return main.callbacks.preview(pitch,id);},
- previewOff:id=>{held.delete(id);main.callbacks.previewOff(id);}
+ select:note=>{main.selected=note?.id??null;main.selection=new Set(lens.selection);main.callbacks.select?.(note);},
+ preview:(pitch,id)=>main.callbacks.preview(pitch,'loupe-'+id),previewOff:id=>main.callbacks.previewOff('loupe-'+id)
  });
- lens.snapMode=main.snapMode;lens.mode=main.mode;lens.slide=main.slide;lens.length=n.duration;lens.velocity=n.velocity;
- lens.beatWidth=Math.max(main.beatWidth,Math.min(144,Math.max(72,28*PPQ/n.duration)));lens.row=Math.max(24,main.row);
- for(const type of ['touchstart','touchmove','selectstart'])canvas.addEventListener(type,e=>{if(e.cancelable)e.preventDefault();},{passive:false});
- panel.querySelector('button').onclick=close;
- const c=main.canvas.getBoundingClientRect(),r=main.rect(n),pos=loupePosition(c,{x:c.left+r.x,y:c.top+r.y,w:r.w,h:r.h},panel.getBoundingClientRect());
- panel.style.left=pos.left+'px';panel.style.top=pos.top+'px';
- document.addEventListener('pointerdown',outside,true);window.addEventListener('resize',close);
- lens.set(project,main.index);lens.select(n.id);lens.x=Math.max(0,n.start/PPQ*lens.beatWidth-(canvas.clientWidth-lens.keyWidth)*.25);lens.y=(127-n.pitch)*lens.row-(canvas.clientHeight-lens.ruler)/2;lens.bounds();lens.draw();
+ function position(){left=clamp(left,main.keyWidth,Math.max(main.keyWidth,main.canvas.clientWidth-panel.offsetWidth-4));top=clamp(top,main.ruler,Math.max(main.ruler,main.canvas.clientHeight-panel.offsetHeight-4));panel.style.left=left+'px';panel.style.top=top+'px';}
+ function sync(){
+  if(!main.channel)return;
+  position();lens.snapMode=main.snapMode;lens.mode=main.mode;lens.slide=main.slide;lens.length=main.length;lens.velocity=main.velocity;
+  if(!lens.pointers.size){
+   const focus=loupeFocus(main,left,top,panel.offsetWidth,panel.offsetHeight);
+   lens.beatWidth=Math.max(48,main.beatWidth*1.4);lens.row=Math.max(22,main.row*1.15);
+   lens.set(main.project,main.index);lens.x=focus.tick/PPQ*lens.beatWidth-(canvas.clientWidth-lens.keyWidth)/2;lens.y=(127-focus.pitch+.5)*lens.row-(canvas.clientHeight-lens.ruler)/2;lens.bounds();lens.draw();
+  }
+ }
+ const draw=main.draw.bind(main);main.draw=()=>{draw();sync();};
+ handle.addEventListener('pointerdown',e=>{e.preventDefault();handle.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,left,top};});
+ handle.addEventListener('pointermove',e=>{if(!drag)return;e.preventDefault();left=drag.left+e.clientX-drag.x;top=drag.top+e.clientY-drag.y;sync();});
+ for(const type of ['pointerup','pointercancel'])handle.addEventListener(type,()=>drag=null);
+ handle.addEventListener('keydown',e=>{const delta={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]}[e.key];if(delta){e.preventDefault();left+=delta[0];top+=delta[1];sync();}});
+ for(const type of ['touchstart','touchmove','selectstart'])panel.addEventListener(type,e=>{if(e.cancelable)e.preventDefault();},{passive:false});
+ // Refresh tools before editing; never consume touches outside the lens.
+ canvas.addEventListener('pointerdown',()=>{lens.mode=main.mode;lens.snapMode=main.snapMode;lens.slide=main.slide;lens.length=main.length;},true);
+ new ResizeObserver(()=>{if(!initialized&&main.canvas.clientWidth){initialized=true;left=main.keyWidth+12;top=main.ruler+20;}sync();}).observe(main.canvas);
+ return {sync};
 }

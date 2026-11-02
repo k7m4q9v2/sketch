@@ -28,3 +28,5 @@
 .preset-use{flex-shrink:0;min-width:48px;min-height:44px;margin-left:6px;color:var(--text);font-size:14px;background:#eeeef1;border-radius:8px}
 
 #note-loupe{position:fixed;z-index:30;width:min(250px,calc(100vw - 32px));background:var(--surface);border:1px solid #d8d8df;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px #0002;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.loupe-heading{display:flex;align-items:center;justify-content:space-between;height:34px;padding:0 10px}.loupe-heading strong{font-size:13px;font-weight:600}.loupe-heading button{min-height:34px;min-width:44px;font-size:14px}.loupe-canvas{position:relative;height:120px}.loupe-canvas canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+
+#note-loupe{position:absolute;z-index:4;width:min(230px,calc(100% - 42px));border-radius:10px}.loupe-heading{height:28px;justify-content:center;cursor:move;touch-action:none;color:#888}.loupe-canvas{height:112px}
