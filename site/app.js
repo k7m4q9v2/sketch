@@ -20,6 +20,10 @@ import {PianoRoll,pitchName} from './piano-roll.js';
 import {midiBytes} from './export.js';
 import {activeChannels} from './model.js';
 import * as storage from './storage.js';
+// Keep touch-triggered dialog autofocus from drawing a keyboard focus ring.
+document.documentElement.dataset.inputMode='pointer';
+document.addEventListener('pointerdown',()=>{document.documentElement.dataset.inputMode='pointer';},true);
+document.addEventListener('keydown',e=>{if(e.key==='Tab'||e.key.startsWith('Arrow'))document.documentElement.dataset.inputMode='keyboard';},true);
 const $=id=>document.getElementById(id),fonts=new Map(),history=new History(),playbackPoint=new PlaybackPoint();
 for(const [id,name]of Object.entries({'back-to-projects':'back','back-to-rack':'back','go-to-start':'start','new-project':'plus','add-channel':'plus','dialog-close':'close','undo':'undo','redo':'redo','draw-tool':'pencil','erase-tool':'eraser','preset-prev':'back','preset-next':'next','metronome':'metronome','play':'play'}))$(id).innerHTML=icon(name);
 for(const element of document.querySelectorAll('.chevron'))element.innerHTML=icon('chevron');
