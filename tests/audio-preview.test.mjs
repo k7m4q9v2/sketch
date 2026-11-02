@@ -15,3 +15,12 @@ test('audition keeps the project unchanged and restores the active sound after s
  const candidate={...p.channels[0],bank:2,program:15};await a.audition(p,0,candidate,60,'test');assert.equal(JSON.stringify(p),before);assert.equal(sent[0].sound.program,15);assert.equal(sent[0].restoreSound,p.channels[0]);assert.ok(loads[0].presets.some(x=>x.bank===2&&x.program===15));assert.ok(loads[0].presets.some(x=>x.bank===p.channels[0].bank&&x.program===p.channels[0].program));
  a.ensure=async()=>a.off('cancel');sent.length=0;await a.audition(p,0,candidate,60,'cancel');assert.equal(sent.some(x=>x.type==='previewOn'),false);
 });
+
+test('loaded audition superset plays immediately without reloading the active bank',async()=>{
+ const {AudioHost}=await import('../site/audio.js');const p=newProject();p.channels=[channel()];const c=p.channels[0],a=new AudioHost(new Map([[c.fontId,{size:64*1024*1024}]]),()=>{});
+ const candidate={...c,program:15};a.loaded.add(c.fontId);a.signatures.set(c.fontId,JSON.stringify([{bank:c.bank,program:c.program},{bank:c.bank,program:15}]));a.ready=true;a.context={state:'running'};
+ a.ensure=()=>{throw Error('unnecessary preparation');};a.load=()=>{throw Error('unnecessary bank reload');};let sent=0;a.send=type=>{if(type==='previewOn')sent++;};a.update=()=>{};
+ const result=a.preview(p,0,60,'note');assert.equal(sent,1);await result;
+ const audition=a.audition(p,0,candidate,60,'instrument');assert.equal(sent,2);await audition;
+ assert.equal(a.hasLoaded(c.fontId,[{bank:c.bank,program:99}]),false);
+});

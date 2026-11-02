@@ -18,7 +18,13 @@ export class AudioHost extends EventTarget{
  }
  resume(){if(!this.context||this.context.state==='running')return Promise.resolve();const generation=this.generation;return deadline(this.context.resume(),4000,'Audio was interrupted. Tap Play to reconnect.').catch(error=>{if(generation===this.generation)this.broken=true;throw error;});}
  signature(id,presets){const font=this.fonts.get(id);return(font?.size??font?.buffer?.byteLength??0)>32*1024*1024?JSON.stringify(presets):'*';}
- hasLoaded(id,presets){return this.loaded.has(id)&&!this.loading.has(id)&&this.signatures.get(id)===this.signature(id,presets);}
+ hasLoaded(id,presets){
+  if(!this.loaded.has(id)||this.loading.has(id))return false;
+  const loaded=this.signatures.get(id),required=this.signature(id,presets);if(loaded==='*'||loaded===required)return true;
+  // A bank loaded for audition also contains the current instrument. Keep it.
+  if(!loaded||required==='*')return false;
+  const available=JSON.parse(loaded);return presets.every(p=>available.some(a=>a.bank===p.bank&&a.program===p.program));
+ }
  async ensure(project,previewChannel=null){
   const resume=this.unlock(),generation=this.generation;
   if(!this.initializing)this.initializing=this.initialize().then(()=>{if(generation===this.generation)this.ready=true;}).catch(error=>{if(generation===this.generation){this.initializing=null;this.broken=true;}throw error;});
@@ -61,9 +67,11 @@ export class AudioHost extends EventTarget{
  }
  async audition(project,channel,sound,pitch,id){
   const token={};this.previewTokens.set(id,token);
-  await this.ensure(project,channel);
+  const active=project.channels[channel];
+  if(!(this.ready&&!this.broken&&this.context?.state==='running'&&active&&this.hasLoaded(active.fontId,requiredPresets(project,active.fontId))))await this.ensure(project,channel);
+  if(this.previewTokens.get(id)!==token)return;
   const presets=requiredPresets(project,sound.fontId);if(!presets.some(p=>p.bank===sound.bank&&p.program===sound.program))presets.push({bank:sound.bank,program:sound.program});presets.sort((a,b)=>a.bank-b.bank||a.program-b.program);
-  await this.load(sound.fontId,presets);if(this.previewTokens.get(id)!==token)return;
+  if(!this.hasLoaded(sound.fontId,presets))await this.load(sound.fontId,presets);if(this.previewTokens.get(id)!==token)return;
   this.send('previewOn',{channel,pitch,id,velocity:100,sound,restoreSound:project.channels[channel],masterPitch:project.pitch,bpm:project.bpm,delay:project.delay});
  }
  off(id){this.previewTokens.delete(id);this.send('previewOff',{id});}
