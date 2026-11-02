@@ -86,3 +86,12 @@ test('scroll, pinch, cancellation and box selection release the early preview',t
   assert.ok(off.includes(heard[0]),action);assert.equal(s.roll.channel.notes.length,0,action);
  }
 });
+
+test('zoomed-out note taps delete even in resize region, while edge drags resize',()=>{
+ for(const width of [12,24,72]){
+  const s=setup();s.roll.beatWidth=width;const n=note(70,480,120);s.roll.channel.notes=[n];let r=s.roll.rect(n);const x=r.x+r.w-1,y=r.y+5;
+  s.roll.down(s.event(x,y));assert.equal(s.roll.gesture.type,'resize');s.roll.up(s.event(x,y));assert.equal(s.roll.channel.notes.length,0);assert.equal(s.checkpoints,1);
+  s.roll.channel.notes=[n];s.roll.down(s.event(x,y));s.roll.move(s.event(x+24,y));s.roll.up(s.event(x+24,y));assert.ok(n.duration>120);assert.equal(s.roll.channel.notes.length,1);assert.equal(s.roll.x,0);
+  r=s.roll.rect(n);s.roll.down(s.event(r.x+r.w-1,y));s.roll.move(s.event(r.x+r.w-13,y));s.roll.up(s.event(r.x+r.w-13,y));assert.equal(s.roll.channel.notes.length,1);
+ }
+});

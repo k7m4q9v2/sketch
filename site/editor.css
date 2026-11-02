@@ -1,3 +1,12 @@
 .roll-toolbar .tool-group{gap:2px}#slide-tool{font-size:15px;min-width:32px;padding:5px}#channel-tuning{display:flex;align-items:center;gap:16px;padding:8px 0;color:#85858e;font-size:12px}#channel-tuning>span{margin-right:auto}.note-popover{max-width:calc(100% - 12px);flex-wrap:wrap}button[hidden]{display:none!important}@media(max-width:430px){.roll-toolbar{gap:4px!important}.roll-toolbar #roll-channel{max-width:105px}}
 
 #go-to-start{display:grid;place-items:center;width:44px;height:44px;padding:10px;color:var(--text)}#go-to-start svg{width:21px;height:21px}
+/* Keep the piano roll visible beside the instrument list. */
+#sound-dialog.instrument-drawer{left:auto;right:0;top:0;bottom:0;margin:0;width:min(340px,82vw);max-width:82vw;height:100dvh;border-radius:16px 0 0 16px;border-left:1px solid var(--edge);padding:12px 12px 8px;overflow:visible;animation:instrument-slide-in .2s ease-out}
+#sound-dialog.instrument-drawer::backdrop{background:#00000018}
+#sound-dialog.instrument-drawer .player{overflow:hidden}
+#sound-dialog.instrument-drawer .player-title-row{gap:8px;min-width:0}
+#sound-dialog.instrument-drawer #player-title{font-size:18px}
+#sound-dialog.instrument-drawer .sound-transport{height:76px}
+@keyframes instrument-slide-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){#sound-dialog.instrument-drawer{animation:none}}

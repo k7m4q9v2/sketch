@@ -73,3 +73,6 @@
 
 ## 2026-11-02 — Remove contour melody experiment
 User requested removing the drawing feature. Removed Melody lab UI, runtime modules, cache entries and feature-only tests. Existing generated notes remain ordinary MIDI; no project/storage/audio migration. Static deployment checks and all 120 remaining tests pass. Cache v18 removes obsolete cached assets on activation.
+
+## 2026-11-02 — Small-note taps and instrument drawer
+Pencil taps on a note body delete even when the body overlaps its resize zone. Dragging the edge still resizes; taps outside the body, holds, pinches and cancelled gestures remain non-destructive. Tested at beat widths 12, 24 and 72. Instruments open as a right-hand drawer; selecting closes it and returns to the roll, Back retains access to sound controls. 121 tests and static checks pass. Browser confirmed selection/return and 390x844 drawer layout with no console errors.

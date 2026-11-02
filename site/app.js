@@ -62,8 +62,8 @@ function enableChannelSwipe(item,index){const remove=document.createElement('but
 
 function option(select,value,label,selected=false){const o=document.createElement('option');o.value=value;o.textContent=label;o.selected=selected;select.append(o);}
 function renderPresets(){const c=current();if(!c)return;const font=fonts.get(c.fontId);$('font-picker-name').textContent=font?.name||'Locate SoundFont';$('preset-picker-name').textContent=c.presetName||'Choose instrument';$('target-channel').textContent=`CH ${String(selected+1).padStart(2,'0')}`;$('target-channel').style.color=c.color;$('roll-channel').textContent=c.name;$('roll-channel').style.color=c.color;$('preset-prev').disabled=$('preset-next').disabled=!font?.presets.length;if(browserMode)renderBrowser();}
-function closeBrowser(){browserMode=null;$('player').classList.remove('browsing');$('player-browser').hidden=true;$('selector-back').hidden=true;$('player-title').textContent='SoundFont';}
-function openBrowser(mode){browserMode=mode;$('player').classList.add('browsing');$('player-browser').hidden=false;$('selector-back').hidden=false;$('selector-search').value='';$('player-title').textContent=mode==='fonts'?'SoundFonts':'Instruments';$('browser-import').hidden=mode!=='fonts';renderBrowser();}
+function closeBrowser(){if($('sound-dialog').classList.contains('direct-instruments'))$('sound-dialog').close();$('sound-dialog').classList.remove('instrument-drawer','direct-instruments');browserMode=null;$('player').classList.remove('browsing');$('player-browser').hidden=true;$('selector-back').hidden=true;$('player-title').textContent='SoundFont';}
+function openBrowser(mode){$('sound-dialog').classList.add('instrument-drawer');browserMode=mode;$('player').classList.add('browsing');$('player-browser').hidden=false;$('selector-back').hidden=false;$('selector-search').value='';$('player-title').textContent=mode==='fonts'?'SoundFonts':'Instruments';$('browser-import').hidden=mode!=='fonts';renderBrowser();}
 function renderBrowser(){
  const list=$('selector-list'),c=current(),query=$('selector-search').value.toLowerCase(),isFonts=browserMode==='fonts';list.replaceChildren();
  $('browser-import').hidden=!isFonts;
@@ -79,7 +79,7 @@ function renderBrowser(){
  if(!list.children.length){const empty=document.createElement('p');empty.className='library-empty';empty.textContent='No sounds';list.append(empty);}
 }
 async function chooseFont(font){audio.unlock().catch(e=>toast(e.message,true));await ensureFontBlob(font.id);checkpoint();const c=current(),p=font.presets[0];c.fontId=font.id;c.bank=p.bank;c.program=p.program;c.presetName=p.name;c.name=p.name;auditionSelection();closeBrowser();changed();}
-on('font-picker','click',()=>openBrowser('fonts'));on('preset-picker','click',()=>openBrowser('presets'));on('selector-back','click',closeBrowser);on('selector-search','input',()=>renderBrowser());
+on('font-picker','click',()=>openBrowser('fonts'));on('preset-picker','click',()=>openBrowser('presets'));on('selector-back','click',()=>{$('sound-dialog').classList.remove('direct-instruments');closeBrowser();requestAnimationFrame(renderEnvelope);});on('selector-search','input',()=>renderBrowser());
 function nextPreset(step){const c=current(),presets=fonts.get(c.fontId)?.presets||[];if(!presets.length)return;const i=presets.findIndex(p=>p.bank===c.bank&&p.program===c.program);choosePreset(presets[(i+step+presets.length)%presets.length]);}
 on('preset-prev','click',()=>nextPreset(-1));on('preset-next','click',()=>nextPreset(1));
 function choosePreset(p){checkpoint();const c=current();const rename=c.name===c.presetName||c.name.startsWith('Channel ');c.bank=p.bank;c.program=p.program;c.presetName=p.name;if(rename)c.name=p.name;auditionSelection();closeBrowser();changed();}
@@ -208,7 +208,7 @@ const transportDock=document.createElement('div');transportDock.className='trans
 function setEditor(open){document.querySelector('.sequencer').classList.toggle('show-roll',open);$('app').classList.toggle('editing',open);requestAnimationFrame(()=>roll.draw());}
 function positionSoundPlay(){const r=transportDock.getBoundingClientRect();$('sound-dialog').style.setProperty('--transport-left',r.left+'px');$('sound-dialog').style.setProperty('--transport-top',r.top+'px');$('sound-dialog').style.setProperty('--transport-width',r.width+'px');}
 new ResizeObserver(()=>{if($('sound-dialog').open)positionSoundPlay();}).observe($('app'));
-function openSound(){if(!current())return;warmChannel();closeBrowser();positionSoundPlay();$('sound-transport').append(transport);$('sound-dialog').showModal();requestAnimationFrame(renderEnvelope);}
+function openSound(){if(!current())return;warmChannel();closeBrowser();positionSoundPlay();$('sound-transport').append(transport);$('sound-dialog').showModal();$('sound-dialog').classList.add('direct-instruments');openBrowser('presets');requestAnimationFrame(renderEnvelope);}
 on('sound-close','click',()=>$('sound-dialog').close());on('roll-channel','click',openSound);
 on('main-menu','click',showExport);
 
