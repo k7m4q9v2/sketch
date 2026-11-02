@@ -51,8 +51,8 @@ test('octave actions transpose the selected group together with one undo step an
 
 test('paste right repeats the selected phrase, expands the loop, selects copies and makes one undo step',()=>{
  const s=setup();s.project.bars=1;const notes=[note(60,960,480,80),note(67,1680,240,95),note(36,0,240,70)];s.roll.channel.notes=notes;s.roll.selection=new Set(notes.slice(0,2).map(n=>n.id));s.roll.selected=notes[0].id;
- assert.equal(s.roll.pasteRight(),true);assert.equal(s.project.bars,2);assert.equal(s.roll.channel.notes.length,5);assert.equal(s.checkpoints,1);assert.equal(s.changes,1);assert.deepEqual(s.roll.selectedNotes.map(n=>[n.pitch,n.start,n.duration,n.velocity]),[[60,2880,480,80],[67,3600,240,95]]);assert.ok(s.roll.selectedNotes.every(n=>!notes.slice(0,3).some(o=>o.id===n.id)));
- assert.equal(s.roll.pasteRight(),true);assert.deepEqual(s.roll.selectedNotes.map(n=>n.start),[4800,5520]);assert.equal(s.checkpoints,2);
+ assert.equal(s.roll.pasteRight(),true);assert.equal(s.project.bars,2);assert.equal(s.roll.channel.notes.length,5);assert.equal(s.checkpoints,1);assert.equal(s.changes,1);assert.deepEqual(s.roll.selectedNotes.map(n=>[n.pitch,n.start,n.duration,n.velocity]),[[60,1920,480,80],[67,2640,240,95]]);assert.ok(s.roll.selectedNotes.every(n=>!notes.slice(0,3).some(o=>o.id===n.id)));
+ assert.equal(s.roll.pasteRight(),true);assert.deepEqual(s.roll.selectedNotes.map(n=>n.start),[2880,3600]);assert.equal(s.checkpoints,2);
  for(const n of s.roll.selectedNotes)n.start=32*4*480-n.duration;const count=s.roll.channel.notes.length;assert.equal(s.roll.pasteRight(),false);assert.equal(s.roll.channel.notes.length,count);assert.equal(s.checkpoints,2);
 });
 
@@ -132,4 +132,20 @@ test('overview includes the full melodic range and empty projects',async()=>{
 
 test('quick zoom doubles per upward 70px and reverses smoothly',async()=>{
  const {zoomDragRatio}=await import('../site/quick-zoom.js');assert.equal(zoomDragRatio(-70),2);assert.equal(zoomDragRatio(70),.5);assert.equal(zoomDragRatio(0),1);assert.equal(zoomDragRatio(-140),4);
+});
+
+test('paste right joins four short notes immediately even after a leading rest',()=>{
+ const s=setup();s.project.bars=4;const notes=[0,1,2,3].map(i=>note(60+i,960+i*120,120));s.roll.channel.notes=notes;s.roll.selection=new Set(notes.map(n=>n.id));s.roll.selected=notes[0].id;
+ assert.equal(s.roll.pasteRight(),true);assert.deepEqual(s.roll.selectedNotes.map(n=>n.start),[1440,1560,1680,1800]);assert.equal(s.project.bars,4);
+ assert.equal(s.roll.pasteRight(),true);assert.deepEqual(s.roll.selectedNotes.map(n=>n.start),[1920,2040,2160,2280]);
+});
+
+test('paste right keeps the box leading rest but ends at the last note, ignoring trailing space',()=>{
+ const s=setup();s.project.bars=4;const r=s.roll;r.channel.notes=[note(60,240,120),note(62,360,120)];
+ const y=r.rect(r.channel.notes[0]).y;r.selectBox({x:r.keyWidth,y:y-60},{x:r.keyWidth+90,y:y+40});
+ assert.deepEqual(r.selectionSpan,{start:0,end:480});assert.equal(r.selection.size,2);
+ r.copySelected();assert.deepEqual(r.clipboard.map(n=>n.start),[240,360]);assert.equal(r.clipboardWidth,480);
+ r.pasteRight();assert.deepEqual(r.selectedNotes.map(n=>n.start),[720,840]);assert.deepEqual(r.selectionSpan,{start:480,end:960});
+ r.pasteRight();assert.deepEqual(r.selectedNotes.map(n=>n.start),[1200,1320]);
+ r.pasteTick=1920;r.pasteNotes();assert.deepEqual(r.selectedNotes.map(n=>n.start),[2160,2280]);assert.deepEqual(r.selectionSpan,{start:1920,end:2400});
 });

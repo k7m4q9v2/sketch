@@ -12,7 +12,7 @@ test('direct preview configuration sounds with correct tuning and envelope befor
 
 test('audition keeps the project unchanged and restores the active sound after starting its voice',async()=>{
  const {AudioHost}=await import('../site/audio.js');const p=newProject();p.channels=[channel()];const before=JSON.stringify(p),sent=[],loads=[];const a=new AudioHost(new Map(),()=>{});a.ensure=async project=>assert.equal(project,p);a.load=async(id,presets)=>loads.push({id,presets});a.send=(type,data)=>sent.push({type,...data});
- const candidate={...p.channels[0],bank:2,program:15};await a.audition(p,0,candidate,60,'test');assert.equal(JSON.stringify(p),before);assert.equal(sent[0].sound.program,15);assert.equal(sent[0].restoreSound,p.channels[0]);assert.ok(loads[0].presets.some(x=>x.bank===2&&x.program===15));assert.ok(loads[0].presets.some(x=>x.bank===p.channels[0].bank&&x.program===p.channels[0].program));
+ const candidate={...p.channels[0],bank:2,program:15};await a.audition(p,0,candidate,60,'test');assert.equal(JSON.stringify(p),before);assert.equal(sent[0].sound.program,15);assert.equal(sent[0].restoreSound.program,p.channels[0].program);assert.equal(sent[0].restoreSound.notes,undefined);assert.equal(sent[0].sound.notes,undefined);assert.ok(loads[0].presets.some(x=>x.bank===2&&x.program===15));assert.ok(loads[0].presets.some(x=>x.bank===p.channels[0].bank&&x.program===p.channels[0].program));
  a.ensure=async()=>a.off('cancel');sent.length=0;await a.audition(p,0,candidate,60,'cancel');assert.equal(sent.some(x=>x.type==='previewOn'),false);
 });
 
@@ -23,4 +23,14 @@ test('loaded audition superset plays immediately without reloading the active ba
  const result=a.preview(p,0,60,'note');assert.equal(sent,1);await result;
  const audition=a.audition(p,0,candidate,60,'instrument');assert.equal(sent,2);await audition;
  assert.equal(a.hasLoaded(c.fontId,[{bank:c.bank,program:99}]),false);
+});
+
+test('standard piano has no added silent render block before its attack',async()=>{
+ const {BUNDLED_FONTS}=await import('../site/bundled-fonts.js');const font=BUNDLED_FONTS.find(f=>f.name==='GeneralUser GS.sf2');
+ const wasm=await readFile(new URL('../site/lumafont.wasm',import.meta.url)),sf2=await readFile(new URL('../site/'+font.file,import.meta.url));
+ for(const rate of [44100,48000]){
+  const engine=await LumaEngine.create(wasm,rate);engine.load(font.id,sf2);const p=newProject(),c=channel();c.fontId=font.id;c.bank=0;c.program=0;
+  engine.configurePreview(0,c,p.pitch,p.bpm);engine.noteOn(0,60,.8);const samples=engine.render(128);
+  assert.ok(samples.some(v=>Math.abs(v)>0.0001),'piano must begin within the first render quantum at '+rate);
+ }
 });

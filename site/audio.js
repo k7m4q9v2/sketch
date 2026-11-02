@@ -72,7 +72,9 @@ export class AudioHost extends EventTarget{
   if(this.previewTokens.get(id)!==token)return;
   const presets=requiredPresets(project,sound.fontId);if(!presets.some(p=>p.bank===sound.bank&&p.program===sound.program))presets.push({bank:sound.bank,program:sound.program});presets.sort((a,b)=>a.bank-b.bank||a.program-b.program);
   if(!this.hasLoaded(sound.fontId,presets))await this.load(sound.fontId,presets);if(this.previewTokens.get(id)!==token)return;
-  this.send('previewOn',{channel,pitch,id,velocity:100,sound,restoreSound:project.channels[channel],masterPitch:project.pitch,bpm:project.bpm,delay:project.delay});
+  const {notes:ignoredNotes,...previewSound}=sound;
+  const {notes:ignoredRestoreNotes,...restoreSound}=project.channels[channel];
+  this.send('previewOn',{channel,pitch,id,velocity:100,sound:previewSound,restoreSound,masterPitch:project.pitch,bpm:project.bpm,delay:project.delay});
  }
  off(id){this.previewTokens.delete(id);this.send('previewOff',{id});}
  update(project,immediate=false){this.nextProject=project;if(immediate){this.flushProject();return;}if(!this.projectTimer)this.projectTimer=setTimeout(()=>this.flushProject(),32);}
