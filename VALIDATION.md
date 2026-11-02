@@ -88,3 +88,6 @@ Replaced Instruments heading and duplicate SF2 card with a filename button. Head
 
 ## 2026-11-02 — Automatic note editing loupe
 Committed note creation opens an interactive local piano-roll loupe when beat width is below 48px or the note is narrower than 26px. Reuses PianoRoll editing, shared MIDI, history and audio callbacks while keeping the main viewport unchanged. Done/outside dismisses and cleans observers, long press timers and previews. Browser verified automatic opening, resizing, pitch dragging and return to unchanged main zoom at 390x700 without console errors. 126 tests and static checks pass. Physical iPhone touch behavior remains unverified.
+
+## 2026-11-02 — Continuous footer background
+Extended the transport background across the viewport and to its bottom edge, including the exposed left strip beside the instrument drawer. Kept buttons at their existing positions. Verified drawer-open and normal piano roll at 390x700. Static deployment checks pass; CSS-only presentation change.

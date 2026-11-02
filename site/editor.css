@@ -21,3 +21,7 @@
 #sound-dialog .transport{width:var(--transport-width)}
 #sound-dialog .player-scroll>.font-picker{display:none}
 #note-loupe{width:min(440px,calc(100vw - 24px));max-width:calc(100vw - 24px);padding:0;border:1px solid #d8d8df;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px #0003;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#note-loupe::backdrop{background:#00000012}.loupe-heading{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;min-height:48px}.loupe-heading strong{font-size:15px;font-weight:600}.loupe-heading button{min-height:44px;min-width:44px;font-size:16px}.loupe-canvas{position:relative;height:min(260px,42dvh);min-height:140px}.loupe-canvas canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+/* One continuous footer surface, including the exposed area beside the drawer. */
+.transport-dock{position:relative;isolation:isolate}.transport-dock::before{content:'';position:absolute;top:0;bottom:calc(-1 * max(8px,env(safe-area-inset-bottom)));left:calc(50% - 50vw);width:100vw;background:var(--surface,#fff);z-index:-1;pointer-events:none}
+#sound-dialog .sound-transport::before{content:'';position:fixed;left:0;right:0;top:var(--transport-top);bottom:0;background:var(--surface,#fff);border-top:1px solid var(--edge);z-index:4;pointer-events:none}
+#sound-dialog .transport{border-top:0;background:transparent}
