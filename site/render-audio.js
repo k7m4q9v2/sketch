@@ -27,13 +27,13 @@ export async function renderAudio({project,fonts=[],tail=true,mode='mix'},wasm,p
  const barFrames=rate*240/project.bpm;
  const spacingBars=Math.max(project.bars,...results.map(r=>Math.ceil((r.buffer.byteLength-44)/4/barFrames)));
  const introFrames=(intro.buffer.byteLength-44)/4,introBars=Math.max(4,Math.ceil(introFrames/barFrames));
- const stems=results.map((r,i)=>({id:r.id,name:r.name,startFrame:Math.round((introBars+1+i*(spacingBars+1))*barFrames),frames:(r.buffer.byteLength-44)/4}));
+ const stems=results.map((r,i)=>({id:r.id,name:r.name,startFrame:Math.round((introBars+.5+i*(spacingBars+.5))*barFrames),frames:(r.buffer.byteLength-44)/4}));
  const frames=stems.at(-1).startFrame+stems.at(-1).frames;
  if(frames*4>256*1024*1024)throw Error('Stem export is too long. Shorten the loop or export fewer channels.');
  const buffer=wavHeader(frames,rate),pcm=new Uint8Array(buffer);
  pcm.set(new Uint8Array(intro.buffer,44),44);
  results.forEach((r,i)=>pcm.set(new Uint8Array(r.buffer,44),44+stems[i].startFrame*4));
- return {buffer,stems,intro:{bars:4,frames:introFrames},spacingBars,gapBars:1,peak:Math.max(intro.peak,...results.map(r=>r.peak)),clipped:results.reduce((n,r)=>n+r.clipped,intro.clipped),tailLimited:intro.tailLimited||results.some(r=>r.tailLimited)};
+ return {buffer,stems,intro:{bars:4,frames:introFrames},spacingBars,gapBars:.5,peak:Math.max(intro.peak,...results.map(r=>r.peak)),clipped:results.reduce((n,r)=>n+r.clipped,intro.clipped),tailLimited:intro.tailLimited||results.some(r=>r.tailLimited)};
 }
 
 function renderPass(project,engine,rate,tail,progress){
