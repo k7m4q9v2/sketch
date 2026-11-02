@@ -9,3 +9,9 @@ test('direct preview configuration sounds with correct tuning and envelope befor
  const {notes,...sound}=p.channels[0];a.configurePreview(0,sound,p.pitch,p.bpm);b.configure(p);a.noteOn(0,67,.8);b.noteOn(0,67,.8);
  let energy=0;for(let i=0;i<100;i++){const x=a.render(128),y=b.render(128);for(let j=0;j<x.length;j++){assert.equal(x[j],y[j]);energy+=x[j]*x[j];}}assert.ok(energy>1e-6);
 });
+
+test('audition keeps the project unchanged and restores the active sound after starting its voice',async()=>{
+ const {AudioHost}=await import('../site/audio.js');const p=newProject();p.channels=[channel()];const before=JSON.stringify(p),sent=[],loads=[];const a=new AudioHost(new Map(),()=>{});a.ensure=async project=>assert.equal(project,p);a.load=async(id,presets)=>loads.push({id,presets});a.send=(type,data)=>sent.push({type,...data});
+ const candidate={...p.channels[0],bank:2,program:15};await a.audition(p,0,candidate,60,'test');assert.equal(JSON.stringify(p),before);assert.equal(sent[0].sound.program,15);assert.equal(sent[0].restoreSound,p.channels[0]);assert.ok(loads[0].presets.some(x=>x.bank===2&&x.program===15));assert.ok(loads[0].presets.some(x=>x.bank===p.channels[0].bank&&x.program===p.channels[0].program));
+ a.ensure=async()=>a.off('cancel');sent.length=0;await a.audition(p,0,candidate,60,'cancel');assert.equal(sent.some(x=>x.type==='previewOn'),false);
+});

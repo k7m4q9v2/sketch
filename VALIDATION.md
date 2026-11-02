@@ -91,3 +91,6 @@ Committed note creation opens an interactive local piano-roll loupe when beat wi
 
 ## 2026-11-02 — Continuous footer background
 Extended the transport background across the viewport and to its bottom edge, including the exposed left strip beside the instrument drawer. Kept buttons at their existing positions. Verified drawer-open and normal piano roll at 390x700. Static deployment checks pass; CSS-only presentation change.
+
+## 2026-11-02 — Anchored compact loupe and explicit instrument Use
+Loupe is 250px wide with a 140px canvas, placed above/below its source note and clamped to the viewport. Original note gets a visible source outline; main view redraws during edits. Instrument row taps audition without committing the project. Use commits bank/program/font; browsing another SF2 is now non-destructive. Audio audition loads active plus candidate presets and restores channel configuration immediately after note-on. Browser verified preview keeps Stereo Grand, Use changes to Bright Grand, and compact source-anchored loupe at 390x700. No console errors. 127 tests and static checks pass.

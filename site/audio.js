@@ -59,6 +59,13 @@ export class AudioHost extends EventTarget{
    this.send('previewOn',{channel,pitch,id,velocity,sound,masterPitch:project.pitch,bpm:project.bpm,delay:project.delay});this.update(project);
   }catch(error){this.previewTokens.delete(id);throw error;}
  }
+ async audition(project,channel,sound,pitch,id){
+  const token={};this.previewTokens.set(id,token);
+  await this.ensure(project,channel);
+  const presets=requiredPresets(project,sound.fontId);if(!presets.some(p=>p.bank===sound.bank&&p.program===sound.program))presets.push({bank:sound.bank,program:sound.program});presets.sort((a,b)=>a.bank-b.bank||a.program-b.program);
+  await this.load(sound.fontId,presets);if(this.previewTokens.get(id)!==token)return;
+  this.send('previewOn',{channel,pitch,id,velocity:100,sound,restoreSound:project.channels[channel],masterPitch:project.pitch,bpm:project.bpm,delay:project.delay});
+ }
  off(id){this.previewTokens.delete(id);this.send('previewOff',{id});}
  update(project,immediate=false){this.nextProject=project;if(immediate){this.flushProject();return;}if(!this.projectTimer)this.projectTimer=setTimeout(()=>this.flushProject(),32);}
  flushProject(){clearTimeout(this.projectTimer);this.projectTimer=null;const project=this.nextProject;if(!this.node||!project)return;const next=JSON.stringify(project);if(this.lastProject!==next){this.send('project',{project});this.lastProject=next;}}

@@ -64,27 +64,29 @@ function enableChannelSwipe(item,index){const remove=document.createElement('but
 
 function option(select,value,label,selected=false){const o=document.createElement('option');o.value=value;o.textContent=label;o.selected=selected;select.append(o);}
 function renderPresets(){const c=current();if(!c)return;const font=fonts.get(c.fontId);$('font-picker-name').textContent=font?.name||'Locate SoundFont';$('preset-picker-name').textContent=c.presetName||'Choose instrument';$('target-channel').textContent=`CH ${String(selected+1).padStart(2,'0')}`;$('target-channel').style.color=c.color;$('roll-channel').textContent=c.name;$('roll-channel').style.color=c.color;$('preset-prev').disabled=$('preset-next').disabled=!font?.presets.length;if(browserMode)renderBrowser();}
-function closeBrowser(){if($('sound-dialog').classList.contains('direct-instruments'))$('sound-dialog').close();$('sound-dialog').classList.remove('instrument-drawer','direct-instruments');browserMode=null;$('player').classList.remove('browsing');$('player-browser').hidden=true;$('selector-back').hidden=true;$('player-title').textContent='SoundFont';}
+let browsingFontId=null;
+function closeBrowser(){browsingFontId=null;if($('sound-dialog').classList.contains('direct-instruments'))$('sound-dialog').close();$('sound-dialog').classList.remove('instrument-drawer','direct-instruments');browserMode=null;$('player').classList.remove('browsing');$('player-browser').hidden=true;$('selector-back').hidden=true;$('player-title').textContent='SoundFont';}
 function openBrowser(mode){$('sound-dialog').classList.add('instrument-drawer');browserMode=mode;$('player').classList.add('browsing');$('player-browser').hidden=false;$('selector-back').hidden=true;$('selector-search').value='';$('instruments-view').setAttribute('aria-selected','true');$('effects-view').setAttribute('aria-selected','false');$('browser-import').hidden=mode!=='fonts';renderBrowser();}
 function renderBrowser(){
  const list=$('selector-list'),c=current(),query=$('selector-search').value.toLowerCase(),isFonts=browserMode==='fonts';list.replaceChildren();
- $('browser-import').hidden=!isFonts;$('player-title').textContent=fonts.get(c.fontId)?.name||'Choose SoundFont';
- const entries=isFonts?[...fonts.values()]:fonts.get(c.fontId)?.presets||[];
+ $('browser-import').hidden=!isFonts;$('player-title').textContent=fonts.get(browsingFontId??c.fontId)?.name||'Choose SoundFont';
+ const entries=isFonts?[...fonts.values()]:fonts.get(browsingFontId??c.fontId)?.presets||[];
  for(const item of entries){if(!item.name.toLowerCase().includes(query))continue;
-  const row=document.createElement('div');row.className='font-list-row';const chosen=isFonts?item.id===c.fontId:item.bank===c.bank&&item.program===c.program;
+  const row=document.createElement('div');row.className='font-list-row';const chosen=isFonts?item.id===c.fontId:(browsingFontId??c.fontId)===c.fontId&&item.bank===c.bank&&item.program===c.program;
   const b=document.createElement('button');b.className='selector-item'+(chosen?' selected':'');b.setAttribute('aria-label',item.name);
   const name=document.createElement('span');name.textContent=item.name;const meta=document.createElement('small');meta.textContent=isFonts?`${item.presets.length} sounds`:`${item.bank} : ${String(item.program).padStart(3,'0')}`;b.append(name,meta);
-  b.onclick=()=>Promise.resolve(isFonts?chooseFont(item):choosePreset(item)).catch(e=>toast(e.message,true));row.append(b);
+  b.onclick=()=>Promise.resolve(isFonts?chooseFont(item):auditionPreset(item)).catch(e=>toast(e.message,true));row.append(b);if(!isFonts){const use=document.createElement('button');use.className='preset-use';use.textContent='Use';use.setAttribute('aria-label','Use '+item.name);use.onclick=()=>choosePreset(item,browsingFontId??c.fontId);row.append(use);}
   if(isFonts&&item.id===STANDARD_FONT.id){const more=document.createElement('button');more.className='font-more';more.innerHTML=icon('more');more.setAttribute('aria-label',`${item.name} options`);more.onclick=()=>{const body=dialog(item.name);paragraph(body,'GeneralUser GS SoftSynth 1.44 · S. Christian Collins');const a=document.createElement('a');a.href='./GeneralUser-LICENSE.txt';a.target='_blank';a.textContent='License';body.append(a);};row.append(more);}
   list.append(row);
  }
  if(!list.children.length){const empty=document.createElement('p');empty.className='library-empty';empty.textContent='No sounds';list.append(empty);}
 }
-async function chooseFont(font){audio.unlock().catch(e=>toast(e.message,true));await ensureFontBlob(font.id);checkpoint();const c=current(),p=font.presets[0];c.fontId=font.id;c.bank=p.bank;c.program=p.program;c.presetName=p.name;c.name=p.name;auditionSelection();openBrowser('presets');changed();}
+async function chooseFont(font){browsingFontId=font.id;openBrowser('presets');}
+function auditionPreset(p){if(selectedSoundPreview)previewOff(selectedSoundPreview);const id='sound-'+uid();selectedSoundPreview=id;const c=current(),sound={...c,fontId:browsingFontId??c.fontId,bank:p.bank,program:p.program};audio.audition(project,selected,sound,roll.selectedNote?.pitch??c.notes[0]?.pitch??60,id).then(()=>setTimeout(()=>audio.off(id),500)).catch(e=>toast(e.message,true));}
 on('player-title','click',()=>openBrowser(browserMode==='fonts'?'presets':'fonts'));on('instruments-view','click',()=>openBrowser('presets'));on('effects-view','click',()=>{$('sound-dialog').classList.remove('direct-instruments');closeBrowser();$('instruments-view').setAttribute('aria-selected','false');$('effects-view').setAttribute('aria-selected','true');$('player-title').textContent=fonts.get(current().fontId)?.name||'Choose SoundFont';requestAnimationFrame(renderEnvelope);});on('font-picker','click',()=>openBrowser('fonts'));on('preset-picker','click',()=>openBrowser('presets'));on('selector-back','click',()=>{$('sound-dialog').classList.remove('direct-instruments');closeBrowser();requestAnimationFrame(renderEnvelope);});on('selector-search','input',()=>renderBrowser());
 function nextPreset(step){const c=current(),presets=fonts.get(c.fontId)?.presets||[];if(!presets.length)return;const i=presets.findIndex(p=>p.bank===c.bank&&p.program===c.program);choosePreset(presets[(i+step+presets.length)%presets.length]);}
 on('preset-prev','click',()=>nextPreset(-1));on('preset-next','click',()=>nextPreset(1));
-function choosePreset(p){checkpoint();const c=current();const rename=c.name===c.presetName||c.name.startsWith('Channel ');c.bank=p.bank;c.program=p.program;c.presetName=p.name;if(rename)c.name=p.name;auditionSelection();closeBrowser();changed();}
+function choosePreset(p,fontId=current().fontId){checkpoint();const c=current();c.fontId=fontId;const rename=c.name===c.presetName||c.name.startsWith('Channel ');c.bank=p.bank;c.program=p.program;c.presetName=p.name;if(rename)c.name=p.name;auditionSelection();closeBrowser();changed();}
 let selectedSoundPreview=null;
 function auditionSelection(){if(selectedSoundPreview)previewOff(selectedSoundPreview);const id='sound-'+uid();selectedSoundPreview=id;const pitch=roll.selectedNote?.pitch??current().notes[0]?.pitch??60;preview(pitch,id).then(()=>setTimeout(()=>{previewOff(id);if(selectedSoundPreview===id)selectedSoundPreview=null;},350));}
 const timeText=v=>v<1?`${Math.round(v*1000)} ms`:`${v.toFixed(2)} s`;
